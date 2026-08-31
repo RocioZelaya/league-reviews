@@ -77,13 +77,13 @@ Nada de código: conseguir accesos antes de empezar.
 
 ## Fase 4 — Cache en base de datos (§7)
 
-- [ ] `getPlayerData(gameName, tagLine)` cache-first sobre `RiotAccount`:
+- [x] `getPlayerData(gameName, tagLine)` cache-first sobre `RiotAccount`:
   - `puuid`: prácticamente inmutable, **no vence**.
   - rank/stats: TTL **15 min** (`statsUpdatedAt`).
   - partidas: TTL **10 min** (`matchesUpdatedAt`).
-- [ ] Solo llamar a Riot cuando el TTL correspondiente venció; los dos TTL se evalúan por separado.
-- [ ] Upsert de `RiotAccount` por `puuid` tras cada refresh, actualizando solo los timestamps que se refrescaron.
-- [ ] Si Riot falla pero hay cache vencida, servir la cache marcando el dato como desactualizado en vez de romper la página.
+- [x] Solo llamar a Riot cuando el TTL correspondiente venció; los dos TTL se evalúan por separado.
+- [x] Upsert de `RiotAccount` por `puuid` tras cada refresh, actualizando solo los timestamps que se refrescaron.
+- [x] Si Riot falla pero hay cache vencida, servir la cache marcando el dato como desactualizado en vez de romper la página.
 - [ ] Botón opcional "Actualizar datos" en el perfil: fuerza refresh (el rate limit de 1 cada 2 min por IP+jugador llega en la Fase 10).
 
 **Verificación:** dos cargas seguidas del mismo perfil hacen 0 llamadas a Riot en la segunda (log de `client.ts`); tras esperar el TTL, vuelve a llamar.
