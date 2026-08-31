@@ -41,16 +41,16 @@ Nada de código: conseguir accesos antes de empezar.
 
 ## Fase 2 — Base de datos (§5)
 
-- [ ] Escribir `prisma/schema.prisma` con los 6 modelos y el enum:
+- [x] Escribir `prisma/schema.prisma` con los 6 modelos y el enum:
   - `RiotAccount` (puuid único, campos de rank, `topChampions`/`lastMatchIds`/`lastMatchesData` como `Json?`, `statsUpdatedAt`, `matchesUpdatedAt`, índice `[gameName, tagLine]`).
   - `Comment` (body, rating, `anonId`, `nickname?`, `ipHash`, `upvotes`/`downvotes`/`score`, `isHidden`, índices en `riotAccountId`, `score` y `createdAt`).
   - `CommentTag` con `@@unique([commentId, tag])`.
   - `enum ReviewTag` con las 9 tags: `GOOD_SHOTCALLER`, `TOXIC_FLAMER`, `GOOD_CARRY`, `TEAM_PLAYER`, `INTING`, `GOOD_MECHANICS`, `BAD_ATTITUDE`, `FRIENDLY`, `GOES_AFK`.
   - `Vote` y `Report`, ambos con `@@unique([commentId, anonId])`.
   - `RateLimitBucket` con `key` único, `count` y `windowStart`.
-- [ ] Todas las relaciones a `Comment` con `onDelete: Cascade`.
-- [ ] Correr `npx prisma migrate dev --name init`.
-- [ ] Escribir `src/lib/db.ts`: singleton de PrismaClient que sobrevive al hot-reload de Next en dev.
+- [x] Todas las relaciones a `Comment` con `onDelete: Cascade`.
+- [x] Correr `npx prisma migrate dev --name init`.
+- [x] Escribir `src/lib/db.ts`: singleton de PrismaClient que sobrevive al hot-reload de Next en dev.
 
 **Verificación:** `npx prisma studio` muestra las 6 tablas vacías; insertar y borrar un `RiotAccount` de prueba funciona.
 

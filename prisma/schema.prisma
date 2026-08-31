@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model RiotAccount {
+  id             String @id @default(cuid())
+  puuid          String @unique
+  gameName       String
+  tagLine        String
+  platformRegion String // "euw1", "na1", etc.
+
+  soloTier         String?
+  soloRank         String?
+  soloLp           Int?
+  soloWins         Int?
+  soloLosses       Int?
+  topChampions     Json? // [{ championId, games, winrate }]
+  lastMatchIds     Json?
+  lastMatchesData  Json? // payload resumido de las últimas 5 partidas
+  statsUpdatedAt   DateTime?
+  matchesUpdatedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  comments Comment[]
+
+  @@index([gameName, tagLine])
+}
+
+model Comment {
+  id            String      @id @default(cuid())
+  riotAccountId String
+  riotAccount   RiotAccount @relation(fields: [riotAccountId], references: [id], onDelete: Cascade)
+
+  body   String       @db.Text
+  rating Int // 1-5
+  tags   CommentTag[]
+
+  anonId   String // uuid en cookie del autor
+  nickname String? // opcional
+  ipHash   String // sha256(ip + salt), nunca IP en claro
+
+  upvotes   Int @default(0)
+  downvotes Int @default(0)
+  score     Int @default(0) // upvotes - downvotes, desnormalizado e indexado
+
+  isHidden  Boolean  @default(false) // auto-oculto tras N reports
+  createdAt DateTime @default(now())
+
+  votes   Vote[]
+  reports Report[]
+
+  @@index([riotAccountId])
+  @@index([score])
+  @@index([createdAt])
+}
+
+model CommentTag {
+  id        String    @id @default(cuid())
+  commentId String
+  comment   Comment   @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  tag       ReviewTag
+
+  @@unique([commentId, tag])
+}
+
+enum ReviewTag {
+  GOOD_SHOTCALLER
+  TOXIC_FLAMER
+  GOOD_CARRY
+  TEAM_PLAYER
+  INTING
+  GOOD_MECHANICS
+  BAD_ATTITUDE
+  FRIENDLY
+  GOES_AFK
+}
+
+model Vote {
+  id        String   @id @default(cuid())
+  commentId String
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  anonId    String
+  value     Int // 1 = up, -1 = down
+  createdAt DateTime @default(now())
+
+  @@unique([commentId, anonId])
+}
+
+model Report {
+  id        String   @id @default(cuid())
+  commentId String
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  anonId    String
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@unique([commentId, anonId])
+}
+
+model RateLimitBucket {
+  id          String   @id @default(cuid())
+  key         String   @unique // ej: "ip:<hash>:comment"
+  count       Int      @default(0)
+  windowStart DateTime @default(now())
+}
