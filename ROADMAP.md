@@ -185,11 +185,11 @@ Nada de código: conseguir accesos antes de empezar.
 
 ## Fase 12 — Pulido (§12)
 
-- [ ] `error.tsx` en las rutas que pueden fallar (perfil, home).
-- [ ] Estados vacíos: jugador sin partidas, jugador sin reviews, home sin comentarios.
-- [ ] Responsive: mobile primero, verificar en ~375 px y desktop.
-- [ ] Accesibilidad básica: labels en el form, foco visible, botones de voto con `aria-label`.
-- [ ] Metadata de la página (title, description).
+- [x] `error.tsx` en las rutas que pueden fallar (perfil, home).
+- [x] Estados vacíos: jugador sin partidas, jugador sin reviews, home sin comentarios.
+- [x] Responsive: mobile primero, verificar en ~375 px y desktop.
+- [x] Accesibilidad básica: labels en el form, foco visible, botones de voto con `aria-label`.
+- [x] Metadata de la página (title, description).
 
 ---
 

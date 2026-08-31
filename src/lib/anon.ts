@@ -3,6 +3,7 @@ export const NICKNAME_COOKIE = "nickname";
 export const ANON_ID_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
 
 function readCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
   const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
   return match ? decodeURIComponent(match[1]) : null;
 }

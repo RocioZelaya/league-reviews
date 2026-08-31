@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ReviewTag } from "@prisma/client";
-import { getClientAnonId, getClientNickname } from "@/lib/anon";
+import {
+  getClientAnonId,
+  getClientNickname,
+  setClientNickname,
+} from "@/lib/anon";
 import { MAX_COMMENT_LENGTH } from "@/lib/validation";
 import { StarRating } from "./StarRating";
 import { TagSelector } from "./TagSelector";
@@ -17,6 +21,7 @@ export function CommentForm({ riotAccountId }: CommentFormProps) {
   const [body, setBody] = useState("");
   const [rating, setRating] = useState(0);
   const [tags, setTags] = useState<ReviewTag[]>([]);
+  const [nickname, setNickname] = useState(() => getClientNickname() ?? "");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -35,6 +40,11 @@ export function CommentForm({ riotAccountId }: CommentFormProps) {
       return;
     }
 
+    const trimmedNickname = nickname.trim();
+    if (trimmedNickname) {
+      setClientNickname(trimmedNickname);
+    }
+
     setIsSubmitting(true);
     try {
       const response = await fetch("/api/comments", {
@@ -46,7 +56,7 @@ export function CommentForm({ riotAccountId }: CommentFormProps) {
           rating,
           tags,
           anonId,
-          nickname: getClientNickname() ?? undefined,
+          nickname: trimmedNickname || undefined,
         }),
       });
 
@@ -67,6 +77,15 @@ export function CommentForm({ riotAccountId }: CommentFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+      <input
+        type="text"
+        value={nickname}
+        onChange={(event) => setNickname(event.target.value)}
+        maxLength={50}
+        placeholder="Tu nombre (opcional)"
+        aria-label="Nickname"
+        className="rounded-lg border border-neutral-300 px-3 py-2"
+      />
       <StarRating value={rating} onChange={setRating} />
       <textarea
         value={body}
