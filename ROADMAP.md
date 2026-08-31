@@ -105,12 +105,12 @@ Nada de código: conseguir accesos antes de empezar.
 
 ## Fase 6 — Home y búsqueda (§6)
 
-- [ ] `src/app/page.tsx`: `SearchBar` + placeholder de `TopCommentsFeed` (el feed real llega en la Fase 11).
-- [ ] `SearchBar` (Client Component):
+- [x] `src/app/page.tsx`: `SearchBar` + placeholder de `TopCommentsFeed` (el feed real llega en la Fase 11).
+- [x] `SearchBar` (Client Component):
   - valida el formato `Nombre#Tag` antes de navegar,
   - `router.push('/player/' + encodeURIComponent('Nombre#Tag'))`,
   - mensaje de error inline si el formato es inválido.
-- [ ] Layout y `globals.css` base.
+- [x] Layout y `globals.css` base.
 
 **Verificación:** buscar `Nombre#Tag` navega al perfil; `Nombre` sin tag muestra error sin navegar.
 
