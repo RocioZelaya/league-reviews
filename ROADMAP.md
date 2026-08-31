@@ -58,18 +58,18 @@ Nada de código: conseguir accesos antes de empezar.
 
 ## Fase 3 — Capa Riot API aislada (§7)
 
-- [ ] `src/lib/riot/regions.ts`: mapeo entre routing **continental** (`americas`/`europe`/`asia`/`sea`, para Account-V1 y Match-V5) y **platform** (`euw1`, `na1`, …, para League-V4), leído de env vars.
-- [ ] `src/lib/riot/types.ts`: tipos de las respuestas de Account-V1, League-V4 y Match-V5 que realmente se consumen (no el payload completo de Riot).
-- [ ] `src/lib/riot/client.ts`: wrapper de `fetch` con
+- [x] `src/lib/riot/regions.ts`: mapeo entre routing **continental** (`americas`/`europe`/`asia`/`sea`, para Account-V1 y Match-V5) y **platform** (`euw1`, `na1`, …, para League-V4), leído de env vars.
+- [x] `src/lib/riot/types.ts`: tipos de las respuestas de Account-V1, League-V4 y Match-V5 que realmente se consumen (no el payload completo de Riot).
+- [x] `src/lib/riot/client.ts`: wrapper de `fetch` con
   - header `X-Riot-Token`,
   - manejo de **429**: leer `Retry-After`, 1 reintento con backoff; si persiste, servir cache existente o error controlado,
   - manejo de **404**: error tipado "jugador no encontrado", nunca un 500 genérico,
   - timeout y errores de red tipados.
-- [ ] `resolveRiotAccount(gameName, tagLine)`:
+- [x] `resolveRiotAccount(gameName, tagLine)`:
   - Account-V1 `/riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}` → `puuid`.
   - League-V4 `/lol/league/v4/entries/by-puuid/{puuid}` → tier, rank, LP, wins, losses de soloQ.
   - Match-V5 `/lol/match/v5/matches/by-puuid/{puuid}/ids?count=5` + `GET /matches/{matchId}` ×5 → resumen de las últimas 5 partidas.
-- [ ] Normalizar el payload de partidas a un resumen chico (campeón, KDA, resultado, duración, fecha, rol) — no guardar el match completo.
+- [x] Normalizar el payload de partidas a un resumen chico (campeón, KDA, resultado, duración, fecha, rol) — no guardar el match completo.
 
 **Verificación:** script suelto (`tsx`/route temporal) contra un Riot ID real que imprima puuid, rank y las 5 partidas.
 
