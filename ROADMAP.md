@@ -175,9 +175,9 @@ Nada de código: conseguir accesos antes de empezar.
 
 ## Fase 11 — Top comentarios en home (§6)
 
-- [ ] `getTopComments(limit = 20)`: orden `score desc, createdAt desc`, excluyendo `isHidden`, incluyendo el `RiotAccount` para poder linkear.
-- [ ] `TopCommentsFeed` (Server Component) en la home.
-- [ ] Cada item linkea al perfil del jugador con anchor al comentario (`/player/<riotId>#comment-<id>`) y la página hace scroll a ese comentario.
+- [x] `getTopComments(limit = 20)`: orden `score desc, createdAt desc`, excluyendo `isHidden`, incluyendo el `RiotAccount` para poder linkear.
+- [x] `TopCommentsFeed` (Server Component) en la home.
+- [x] Cada item linkea al perfil del jugador con anchor al comentario (`/player/<riotId>#comment-<id>`) y la página hace scroll a ese comentario.
 
 **Verificación:** un comentario recién votado hacia arriba sube en la home tras revalidar, y su link cae exactamente en ese comentario dentro del perfil.
 
