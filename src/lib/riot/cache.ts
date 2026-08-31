@@ -89,6 +89,7 @@ async function refreshMatches(
 export async function getPlayerData(
   gameName: string,
   tagLine: string,
+  forceRefresh = false,
 ): Promise<RiotAccount> {
   const existing = await db.riotAccount.findFirst({
     where: { gameName, tagLine },
@@ -96,7 +97,7 @@ export async function getPlayerData(
 
   if (existing) {
     const updates: Prisma.RiotAccountUpdateInput = {};
-    if (isStale(existing.statsUpdatedAt, STATS_TTL_MS)) {
+    if (forceRefresh || isStale(existing.statsUpdatedAt, STATS_TTL_MS)) {
       try {
         Object.assign(updates, await refreshStats(existing));
       } catch (error) {
@@ -107,7 +108,7 @@ export async function getPlayerData(
         });
       }
     }
-    if (isStale(existing.matchesUpdatedAt, MATCHES_TTL_MS)) {
+    if (forceRefresh || isStale(existing.matchesUpdatedAt, MATCHES_TTL_MS)) {
       try {
         Object.assign(updates, await refreshMatches(existing));
       } catch (error) {

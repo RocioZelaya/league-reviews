@@ -3,13 +3,12 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { createCommentSchema } from "@/lib/validation";
 import { containsProfanity } from "@/lib/profanity";
-import { hashIp } from "@/lib/hash";
-
-function getClientIp(request: NextRequest): string {
-  return (
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
-  );
-}
+import { hashIp, getClientIp } from "@/lib/hash";
+import {
+  checkRateLimit,
+  RateLimitExceededError,
+  COMMENT_RATE_LIMIT,
+} from "@/lib/rateLimit";
 
 export async function POST(request: NextRequest) {
   const parsed = createCommentSchema.safeParse(await request.json());
@@ -31,6 +30,23 @@ export async function POST(request: NextRequest) {
   }
 
   const ipHash = hashIp(getClientIp(request));
+
+  try {
+    await checkRateLimit(
+      "comment",
+      ipHash,
+      COMMENT_RATE_LIMIT.limit,
+      COMMENT_RATE_LIMIT.windowMs,
+    );
+  } catch (error) {
+    if (error instanceof RateLimitExceededError) {
+      return NextResponse.json(
+        { error: "Alcanzaste el límite de comentarios por hora." },
+        { status: 429 },
+      );
+    }
+    throw error;
+  }
 
   const comment = await db.$transaction(async (tx) => {
     const created = await tx.comment.create({

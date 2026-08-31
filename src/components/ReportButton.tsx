@@ -9,6 +9,7 @@ type ReportButtonProps = {
 
 export function ReportButton({ commentId }: ReportButtonProps) {
   const [status, setStatus] = useState<"idle" | "sent">("idle");
+  const [error, setError] = useState<string | null>(null);
 
   async function handleReport() {
     const anonId = getClientAnonId();
@@ -19,6 +20,7 @@ export function ReportButton({ commentId }: ReportButtonProps) {
     );
     if (!confirmed) return;
 
+    setError(null);
     const response = await fetch(`/api/comments/${commentId}/report`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -27,17 +29,24 @@ export function ReportButton({ commentId }: ReportButtonProps) {
 
     if (response.ok) {
       setStatus("sent");
+      return;
     }
+
+    const data = (await response.json()) as { error?: string };
+    setError(data.error ?? "No se pudo enviar el reporte.");
   }
 
   return (
-    <button
-      type="button"
-      onClick={handleReport}
-      disabled={status === "sent"}
-      className="text-sm text-neutral-500 underline disabled:no-underline"
-    >
-      {status === "sent" ? "Reportado" : "Reportar"}
-    </button>
+    <div className="flex flex-col items-end gap-1">
+      <button
+        type="button"
+        onClick={handleReport}
+        disabled={status === "sent"}
+        className="text-sm text-neutral-500 underline disabled:no-underline"
+      >
+        {status === "sent" ? "Reportado" : "Reportar"}
+      </button>
+      {error && <p className="text-xs text-red-600">{error}</p>}
+    </div>
   );
 }

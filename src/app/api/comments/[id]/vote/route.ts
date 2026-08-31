@@ -1,6 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { voteSchema } from "@/lib/validation";
+import { hashIp, getClientIp } from "@/lib/hash";
+import {
+  checkRateLimit,
+  RateLimitExceededError,
+  VOTE_RATE_LIMIT,
+} from "@/lib/rateLimit";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -14,6 +20,23 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   const { anonId, value } = parsed.data;
+
+  try {
+    await checkRateLimit(
+      "vote",
+      hashIp(getClientIp(request)),
+      VOTE_RATE_LIMIT.limit,
+      VOTE_RATE_LIMIT.windowMs,
+    );
+  } catch (error) {
+    if (error instanceof RateLimitExceededError) {
+      return NextResponse.json(
+        { error: "Alcanzaste el límite de votos por hora." },
+        { status: 429 },
+      );
+    }
+    throw error;
+  }
 
   const comment = await db.$transaction(async (tx) => {
     const existingVote = await tx.vote.findUnique({

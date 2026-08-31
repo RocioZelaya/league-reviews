@@ -1,6 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { reportSchema } from "@/lib/validation";
+import { hashIp, getClientIp } from "@/lib/hash";
+import {
+  checkRateLimit,
+  RateLimitExceededError,
+  REPORT_RATE_LIMIT,
+} from "@/lib/rateLimit";
 
 const AUTO_HIDE_REPORT_THRESHOLD = 5;
 
@@ -16,6 +22,23 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   const { anonId, reason } = parsed.data;
+
+  try {
+    await checkRateLimit(
+      "report",
+      hashIp(getClientIp(request)),
+      REPORT_RATE_LIMIT.limit,
+      REPORT_RATE_LIMIT.windowMs,
+    );
+  } catch (error) {
+    if (error instanceof RateLimitExceededError) {
+      return NextResponse.json(
+        { error: "Alcanzaste el límite de reportes por hora." },
+        { status: 429 },
+      );
+    }
+    throw error;
+  }
 
   const reportCount = await db.$transaction(async (tx) => {
     await tx.report.upsert({
