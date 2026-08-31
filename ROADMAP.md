@@ -129,16 +129,16 @@ Nada de código: conseguir accesos antes de empezar.
 
 ## Fase 8 — Sistema de reviews (§8.1)
 
-- [ ] `src/lib/validation.ts` con zod: `body` 1-1000 chars, `rating` entero 1-5, `tags` del enum con **máximo 3**, `anonId` uuid, `nickname` opcional.
-- [ ] `src/lib/profanity.ts`: `obscenity` cargado **una sola vez** a nivel de módulo (dataset default + lista custom en español si hace falta), exportando `containsProfanity(text)`.
-- [ ] `POST /api/comments`:
+- [x] `src/lib/validation.ts` con zod: `body` 1-1000 chars, `rating` entero 1-5, `tags` del enum con **máximo 3**, `anonId` uuid, `nickname` opcional.
+- [x] `src/lib/profanity.ts`: `obscenity` cargado **una sola vez** a nivel de módulo (dataset default + lista custom en español si hace falta), exportando `containsProfanity(text)`.
+- [x] `POST /api/comments`:
   1. Validar con zod.
   2. `containsProfanity(body)` → rechazar con mensaje claro (**no** censura silenciosa).
   3. Rate limit (se cablea en la Fase 10).
   4. Crear `Comment` + `CommentTag[]` en **una transacción**.
   5. `revalidatePath` del perfil del jugador y de la home.
-- [ ] Componentes: `CommentForm` (con `StarRating` y `TagSelector`), `CommentList`, `CommentItem`.
-- [ ] `CommentList` excluye los comentarios con `isHidden = true`.
+- [x] Componentes: `CommentForm` (con `StarRating` y `TagSelector`), `CommentList`, `CommentItem`.
+- [x] `CommentList` excluye los comentarios con `isHidden = true`.
 
 **Verificación:** comentar desde la UI persiste comment + tags (visible en `prisma studio`) y aparece sin recargar a mano; un texto con palabra prohibida se rechaza con mensaje explícito.
 
