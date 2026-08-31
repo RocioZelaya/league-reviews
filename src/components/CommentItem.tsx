@@ -1,4 +1,6 @@
 import type { CommentTag } from "@prisma/client";
+import { VoteButtons } from "./VoteButtons";
+import { ReportButton } from "./ReportButton";
 
 type CommentItemProps = {
   id: string;
@@ -39,7 +41,10 @@ export function CommentItem({
           ))}
         </div>
       )}
-      <p className="mt-2 text-sm text-neutral-500">Score: {score}</p>
+      <div className="mt-3 flex items-center justify-between">
+        <VoteButtons commentId={id} initialScore={score} />
+        <ReportButton commentId={id} />
+      </div>
     </li>
   );
 }

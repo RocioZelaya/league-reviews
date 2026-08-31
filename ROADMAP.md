@@ -146,14 +146,14 @@ Nada de código: conseguir accesos antes de empezar.
 
 ## Fase 9 — Votos y reportes (§8.2, §8.3)
 
-- [ ] `POST /api/comments/[id]/vote` con body `{ anonId, value: 1 | -1 }`:
+- [x] `POST /api/comments/[id]/vote` con body `{ anonId, value: 1 | -1 }`:
   - Upsert sobre `Vote` respetando `@@unique([commentId, anonId])`.
   - Mismo valor que el voto existente → quita el voto (toggle). Valor distinto → lo actualiza.
   - Recalcular `upvotes`, `downvotes` y `score` **en la misma transacción** que el voto.
-- [ ] `POST /api/comments/[id]/report` con body `{ anonId, reason? }`:
+- [x] `POST /api/comments/[id]/report` con body `{ anonId, reason? }`:
   - Upsert respetando `@@unique([commentId, anonId])`.
   - Al llegar a **5 reports** → `isHidden = true` automático (no hay panel de admin en el MVP).
-- [ ] Componentes `VoteButtons` (estado optimista + rollback si el POST falla) y `ReportButton` (confirmación antes de mandar).
+- [x] Componentes `VoteButtons` (estado optimista + rollback si el POST falla) y `ReportButton` (confirmación antes de mandar).
 
 **Verificación:** votar dos veces igual deja `score` en 0; cambiar el voto mueve el score de +1 a -1 en un solo paso; 5 reports de 5 `anonId` distintos ocultan el comentario de la lista.
 
