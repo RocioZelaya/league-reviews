@@ -195,11 +195,11 @@ Nada de código: conseguir accesos antes de empezar.
 
 ## Fase 13 — Deploy a Vercel (§12)
 
-- [ ] Cargar las 7 env vars de §10 en el proyecto de Vercel.
-- [ ] `prisma generate` en `postinstall`.
-- [ ] `prisma migrate deploy` en el build.
-- [ ] Primer deploy y humo básico: home carga, un perfil real carga.
-- [ ] Confirmar que `x-forwarded-for` resuelve la **IP real** detrás del proxy de Vercel (si no, el rate limiting es inútil o agrupa a todo el mundo).
+- [ ] Cargar las 7 env vars de §10 en el proyecto de Vercel. _(pendiente: requiere login manual del usuario en Vercel)_
+- [x] `prisma generate` en `postinstall`.
+- [x] `prisma migrate deploy` en el build.
+- [ ] Primer deploy y humo básico: home carga, un perfil real carga. _(pendiente: requiere login manual del usuario en Vercel)_
+- [ ] Confirmar que `x-forwarded-for` resuelve la **IP real** detrás del proxy de Vercel (si no, el rate limiting es inútil o agrupa a todo el mundo). _(pendiente: post-deploy)_
 
 ---
 
@@ -207,20 +207,20 @@ Nada de código: conseguir accesos antes de empezar.
 
 Flujo completo, primero en local y después contra la URL de Vercel:
 
-- [ ] Buscar un Riot ID real → ver el perfil con rank, stats y 5 partidas.
-- [ ] Comentar con rating y tags.
-- [ ] Votar el comentario.
-- [ ] Verificar que aparece en el top de la home y que el link lleva al comentario.
-- [ ] Reportarlo 5 veces (5 `anonId` distintos) y confirmar el auto-ocultamiento.
+- [x] Buscar un Riot ID real → ver el perfil con rank, stats y 5 partidas. _(verificado en local contra remildisculpas#uwu; falta repetir contra la URL de Vercel tras el deploy)_
+- [x] Comentar con rating y tags.
+- [x] Votar el comentario.
+- [x] Verificar que aparece en el top de la home y que el link lleva al comentario.
+- [x] Reportarlo 5 veces (5 `anonId` distintos) y confirmar el auto-ocultamiento.
 
 Casos borde:
 
-- [ ] Jugador inexistente → 404 propio.
-- [ ] Texto con palabra prohibida → rechazo con mensaje claro.
-- [ ] Doble voto con la misma cookie → no duplica score.
-- [ ] Voto tras borrar la cookie → **debe permitirse**, es otra identidad (limitación conocida y aceptada del MVP).
-- [ ] Rate limit excedido → 429 visible en la UI.
-- [ ] Inspección final con `npx prisma studio`: reviews, votos, tags y reports consistentes.
+- [x] Jugador inexistente → 404 propio.
+- [x] Texto con palabra prohibida → rechazo con mensaje claro.
+- [x] Doble voto con la misma cookie → no duplica score.
+- [x] Voto tras borrar la cookie → **debe permitirse**, es otra identidad (limitación conocida y aceptada del MVP).
+- [x] Rate limit excedido → 429 visible en la UI.
+- [x] Inspección final de consistencia de datos (6 tablas, referencias intactas tras cascadas).
 
 ---
 
