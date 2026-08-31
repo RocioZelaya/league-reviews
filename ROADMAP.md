@@ -13,15 +13,15 @@ Cada fase referencia la sección de `SPECS.md` que la define. Las fases están o
 
 Nada de código: conseguir accesos antes de empezar.
 
-- [ ] Crear cuenta en https://developer.riotgames.com/ y generar la **Development API Key**.
+- [x] Crear cuenta en https://developer.riotgames.com/ y generar la **Development API Key**.
   - Expira cada 24 h: hay que regenerarla y actualizar `.env.local` a diario durante el desarrollo.
   - Límites de la dev key: 20 req/1 s y 100 req/2 min — condicionan el diseño de cache de la Fase 4.
-- [ ] Crear proyecto en **Neon** y copiar las dos connection strings:
+- [x] Crear proyecto en **Neon** y copiar las dos connection strings:
   - `DATABASE_URL` (pooled, la que usa la app en runtime).
   - `DIRECT_URL` (directa, requerida por Neon para `prisma migrate`).
-- [ ] Crear cuenta en **Vercel** (el deploy real es la Fase 13).
-- [ ] Decidir región inicial: **EUW1 / europe**, siempre por env var, nunca hardcodeada.
-- [ ] Generar un `RATE_LIMIT_SALT` aleatorio (p. ej. `openssl rand -hex 32`).
+- [ ] Crear cuenta en **Vercel** (el deploy real es la Fase 13). _(pendiente: requiere acción manual del usuario)_
+- [x] Decidir región inicial: **americas / LA2** (la cuenta de prueba real es de esa región; configurable por env var, nunca hardcodeada).
+- [x] Generar un `RATE_LIMIT_SALT` aleatorio (p. ej. `openssl rand -hex 32`).
 
 **Verificación:** `curl` manual a Account-V1 con la key y un Riot ID real devuelve un `puuid`.
 
