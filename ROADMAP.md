@@ -118,10 +118,10 @@ Nada de código: conseguir accesos antes de empezar.
 
 ## Fase 7 — Identidad anónima (§9)
 
-- [ ] `middleware.ts`: si no existe la cookie `anonId`, generar `crypto.randomUUID()` y setearla (`sameSite: lax`, `maxAge` 1 año, **no** httpOnly — el cliente la lee para mandarla en los POST).
-- [ ] `src/lib/anon.ts`: leer/escribir `anonId` desde server y cliente.
-- [ ] Cookie separada de **nickname** opcional, editable por el usuario, sin unicidad — es display name, no cuenta.
-- [ ] `src/lib/hash.ts`: `sha256(ip + RATE_LIMIT_SALT)`. La IP sale de `x-forwarded-for` y **nunca** se persiste en claro.
+- [x] `middleware.ts`: si no existe la cookie `anonId`, generar `crypto.randomUUID()` y setearla (`sameSite: lax`, `maxAge` 1 año, **no** httpOnly — el cliente la lee para mandarla en los POST).
+- [x] `src/lib/anon.ts`: leer/escribir `anonId` desde server y cliente.
+- [x] Cookie separada de **nickname** opcional, editable por el usuario, sin unicidad — es display name, no cuenta.
+- [x] `src/lib/hash.ts`: `sha256(ip + RATE_LIMIT_SALT)`. La IP sale de `x-forwarded-for` y **nunca** se persiste en claro.
 
 **Verificación:** primera visita setea la cookie; borrarla y recargar genera un `anonId` distinto.
 
