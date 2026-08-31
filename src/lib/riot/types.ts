@@ -46,6 +46,12 @@ export type MatchSummary = {
   role: string;
 };
 
+export type ChampionStat = {
+  championName: string;
+  games: number;
+  winrate: number;
+};
+
 export type SoloQueueRank = {
   tier: string;
   rank: string;

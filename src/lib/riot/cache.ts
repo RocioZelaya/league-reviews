@@ -7,7 +7,27 @@ import {
   fetchRecentMatchIds,
   fetchMatch,
 } from "./client";
-import type { MatchSummary } from "./types";
+import type { ChampionStat, MatchSummary } from "./types";
+
+function computeTopChampions(summaries: MatchSummary[]): ChampionStat[] {
+  const byChampion = new Map<string, { games: number; wins: number }>();
+  for (const summary of summaries) {
+    const entry = byChampion.get(summary.championName) ?? {
+      games: 0,
+      wins: 0,
+    };
+    entry.games += 1;
+    entry.wins += summary.win ? 1 : 0;
+    byChampion.set(summary.championName, entry);
+  }
+  return Array.from(byChampion.entries())
+    .map(([championName, { games, wins }]) => ({
+      championName,
+      games,
+      winrate: Math.round((wins / games) * 100),
+    }))
+    .sort((a, b) => b.games - a.games);
+}
 
 const STATS_TTL_MS = 15 * 60 * 1000;
 const MATCHES_TTL_MS = 10 * 60 * 1000;
@@ -61,6 +81,7 @@ async function refreshMatches(
   return {
     lastMatchIds: matchIds,
     lastMatchesData: summaries,
+    topChampions: computeTopChampions(summaries),
     matchesUpdatedAt: new Date(),
   };
 }

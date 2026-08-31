@@ -92,12 +92,12 @@ Nada de código: conseguir accesos antes de empezar.
 
 ## Fase 5 — Página de perfil, solo lectura (§6)
 
-- [ ] Ruta `src/app/player/[riotId]/page.tsx` (Server Component):
+- [x] Ruta `src/app/player/[riotId]/page.tsx` (Server Component):
   1. Decodificar `riotId` y parsear `gameName` / `tagLine` (separador `#`).
   2. Llamar a `getPlayerData` directo desde el server component — sin round-trip HTTP a la propia API.
   3. `notFound()` (404) si el jugador no existe en Riot.
-- [ ] Componentes: `PlayerCard`, `RankSummary`, `ChampionStatsGrid`, `MatchList` + `MatchItem` (5 items).
-- [ ] `loading.tsx` con skeleton — la resolución contra Riot puede tardar 1-2 s en frío.
+- [x] Componentes: `PlayerCard`, `RankSummary`, `ChampionStatsGrid`, `MatchList` + `MatchItem` (5 items).
+- [x] `loading.tsx` con skeleton — la resolución contra Riot puede tardar 1-2 s en frío.
 
 **Verificación:** `/player/Faker%23KR1` renderiza datos reales; un Riot ID inventado muestra el 404 propio, no un stack trace.
 
