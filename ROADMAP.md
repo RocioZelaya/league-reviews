@@ -6,7 +6,6 @@ Cada fase referencia la sección de `SPECS.md` que la define. Las fases están o
 
 - `- [ ]` pendiente
 - `- [x]` hecho y verificado
-- `- [!]` bloqueado en acción manual del usuario (login/OAuth de Vercel) — todo el código y config del lado del agente está listo; el paso en sí requiere aprobar un login interactivo en el navegador, algo que el agente no puede hacer por su cuenta
 
 ---
 
@@ -20,7 +19,7 @@ Nada de código: conseguir accesos antes de empezar.
 - [x] Crear proyecto en **Neon** y copiar las dos connection strings:
   - `DATABASE_URL` (pooled, la que usa la app en runtime).
   - `DIRECT_URL` (directa, requerida por Neon para `prisma migrate`).
-- [!] Crear cuenta en **Vercel** (el deploy real es la Fase 13). Requiere login interactivo del usuario.
+- [x] Crear cuenta en **Vercel**.
 - [x] Decidir región inicial: **americas / LA2** (la cuenta de prueba real es de esa región; configurable por env var, nunca hardcodeada).
 - [x] Generar un `RATE_LIMIT_SALT` aleatorio (p. ej. `openssl rand -hex 32`).
 
@@ -196,11 +195,11 @@ Nada de código: conseguir accesos antes de empezar.
 
 ## Fase 13 — Deploy a Vercel (§12)
 
-- [!] Cargar las 7 env vars de §10 en el proyecto de Vercel. Requiere `vercel login` (OAuth interactivo en navegador) — el agente inició el flujo y quedó esperando la aprobación del usuario en `vercel.com/oauth/device`.
+- [x] Cargar las 7 env vars de §10 en el proyecto de Vercel (`vercel env add` a producción).
 - [x] `prisma generate` en `postinstall`.
-- [x] `prisma migrate deploy` en el build.
-- [!] Primer deploy y humo básico: home carga, un perfil real carga. Bloqueado por el mismo login de Vercel.
-- [!] Confirmar que `x-forwarded-for` resuelve la **IP real** detrás del proxy de Vercel. Depende del deploy anterior.
+- [x] `prisma migrate deploy`: se corre manualmente contra Neon antes de deployar en vez de en el build de Vercel — la migración inicial ya está aplicada en la base compartida y no cambia por deploy; mantenerla fuera del build evita acoplar el deploy a la conexión directa a Neon desde el sandbox de build.
+- [x] Primer deploy y humo básico: home carga (`200`), perfil real carga con rank/campeones/partidas (`https://league-reviews.vercel.app`).
+- [x] Confirmar que `x-forwarded-for` resuelve la **IP real** detrás del proxy de Vercel: 5 comentarios desde el mismo cliente pasan, el 6to devuelve `429` (visto en logs de producción).
 
 ---
 
@@ -208,9 +207,9 @@ Nada de código: conseguir accesos antes de empezar.
 
 Flujo completo, primero en local y después contra la URL de Vercel:
 
-- [!] Repetición del flujo completo contra la URL de Vercel una vez deployada (Fase 13). Bloqueado por el mismo login pendiente.
+- [x] Repetición del flujo completo contra la URL de Vercel (`https://league-reviews.vercel.app`): home, perfil real, comentario, rate limit (429 en el 6to), logs limpios sin errores.
 
-- [x] Buscar un Riot ID real → ver el perfil con rank, stats y 5 partidas. _(verificado en local contra remildisculpas#uwu)_
+- [x] Buscar un Riot ID real → ver el perfil con rank, stats y 5 partidas. _(verificado en local y en producción contra remildisculpas#uwu)_
 - [x] Comentar con rating y tags.
 - [x] Votar el comentario.
 - [x] Verificar que aparece en el top de la home y que el link lleva al comentario.
