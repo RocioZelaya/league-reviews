@@ -28,6 +28,17 @@ export class RiotApiError extends Error {
   }
 }
 
+const AUTH_FAILURE_STATUSES = new Set([401, 403]);
+
+/** True when Riot rejected the API key itself (expired dev key, wrong key). */
+export function isRiotAuthFailure(error: unknown): boolean {
+  return (
+    error instanceof RiotApiError &&
+    error.status !== undefined &&
+    AUTH_FAILURE_STATUSES.has(error.status)
+  );
+}
+
 function readApiKey(): string {
   const apiKey = process.env.RIOT_API_KEY;
   if (!apiKey) {
@@ -47,7 +58,10 @@ async function riotFetch<T>(url: string, hasRetried = false): Promise<T> {
       signal: controller.signal,
     });
   } catch (error) {
-    console.error("riot.request.network_error", { url, error });
+    console.warn("riot.request.network_error", {
+      url,
+      message: error instanceof Error ? error.message : String(error),
+    });
     throw new RiotApiError("Riot API network error");
   } finally {
     clearTimeout(timeout);
@@ -59,7 +73,7 @@ async function riotFetch<T>(url: string, hasRetried = false): Promise<T> {
 
   if (response.status === 429) {
     if (hasRetried) {
-      console.error("riot.request.rate_limited", { url });
+      console.warn("riot.request.rate_limited", { url });
       throw new RiotApiError("Riot API rate limit exceeded", 429);
     }
     const retryAfterSeconds = Number(
@@ -72,7 +86,6 @@ async function riotFetch<T>(url: string, hasRetried = false): Promise<T> {
   }
 
   if (!response.ok) {
-    console.error("riot.request.failed", { url, status: response.status });
     throw new RiotApiError(
       `Riot API request failed with status ${response.status}`,
       response.status,

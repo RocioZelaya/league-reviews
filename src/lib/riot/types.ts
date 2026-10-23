@@ -67,3 +67,8 @@ export type ResolvedRiotAccount = {
   soloQueueRank: SoloQueueRank | null;
   matches: MatchSummary[];
 };
+
+export type StaleSections = {
+  stats: boolean;
+  matches: boolean;
+};

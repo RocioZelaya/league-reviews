@@ -6,8 +6,37 @@ import {
   fetchSoloQueueEntry,
   fetchRecentMatchIds,
   fetchMatch,
+  isRiotAuthFailure,
+  RiotApiError,
 } from "./client";
-import type { ChampionStat, MatchSummary } from "./types";
+import type { ChampionStat, MatchSummary, StaleSections } from "./types";
+
+export type PlayerData = {
+  account: RiotAccount;
+  /** A section is stale when its refresh was attempted and failed, so the value shown comes from expired cache. */
+  stale: StaleSections;
+};
+
+const AUTH_FAILURE_HINT =
+  "RIOT_API_KEY rejected: dev keys expire every 24 h, regenerate at developer.riotgames.com";
+
+// Logged once per failed section with serializable fields only: the dev
+// overlay forwards server console output to the browser and renders a raw
+// Error as "{}".
+function logRefreshFailure(
+  section: keyof StaleSections,
+  gameName: string,
+  tagLine: string,
+  error: unknown,
+): void {
+  console.warn(`riot.${section}.refresh_failed`, {
+    gameName,
+    tagLine,
+    status: error instanceof RiotApiError ? error.status : undefined,
+    message: error instanceof Error ? error.message : String(error),
+    hint: isRiotAuthFailure(error) ? AUTH_FAILURE_HINT : undefined,
+  });
+}
 
 function computeTopChampions(summaries: MatchSummary[]): ChampionStat[] {
   const byChampion = new Map<string, { games: number; wins: number }>();
@@ -90,40 +119,39 @@ export async function getPlayerData(
   gameName: string,
   tagLine: string,
   forceRefresh = false,
-): Promise<RiotAccount> {
+): Promise<PlayerData> {
   const existing = await db.riotAccount.findFirst({
     where: { gameName, tagLine },
   });
 
   if (existing) {
     const updates: Prisma.RiotAccountUpdateInput = {};
+    const stale: StaleSections = { stats: false, matches: false };
     if (forceRefresh || isStale(existing.statsUpdatedAt, STATS_TTL_MS)) {
       try {
         Object.assign(updates, await refreshStats(existing));
       } catch (error) {
-        console.error("riot.stats.refresh_failed", {
-          gameName,
-          tagLine,
-          error,
-        });
+        stale.stats = true;
+        logRefreshFailure("stats", gameName, tagLine, error);
       }
     }
     if (forceRefresh || isStale(existing.matchesUpdatedAt, MATCHES_TTL_MS)) {
       try {
         Object.assign(updates, await refreshMatches(existing));
       } catch (error) {
-        console.error("riot.matches.refresh_failed", {
-          gameName,
-          tagLine,
-          error,
-        });
+        stale.matches = true;
+        logRefreshFailure("matches", gameName, tagLine, error);
       }
     }
     if (Object.keys(updates).length === 0) {
       console.info("riot.player.cache_hit", { gameName, tagLine });
-      return existing;
+      return { account: existing, stale };
     }
-    return db.riotAccount.update({ where: { id: existing.id }, data: updates });
+    const account = await db.riotAccount.update({
+      where: { id: existing.id },
+      data: updates,
+    });
+    return { account, stale };
   }
 
   const account = await fetchAccountByRiotId(gameName, tagLine);
@@ -141,8 +169,9 @@ export async function getPlayerData(
     refreshMatches(created),
   ]);
 
-  return db.riotAccount.update({
+  const updated = await db.riotAccount.update({
     where: { id: created.id },
     data: { ...statsUpdates, ...matchUpdates },
   });
+  return { account: updated, stale: { stats: false, matches: false } };
 }

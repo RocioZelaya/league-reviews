@@ -14,6 +14,8 @@ type PlayerCardProps = {
   leaguePoints: number | null;
   wins: number | null;
   losses: number | null;
+  statsUpdatedAt: Date | null;
+  isStatsStale: boolean;
   reviewSummary: ReviewSummary;
 };
 
@@ -25,6 +27,8 @@ export function PlayerCard({
   leaguePoints,
   wins,
   losses,
+  statsUpdatedAt,
+  isStatsStale,
   reviewSummary,
 }: PlayerCardProps) {
   return (
@@ -51,6 +55,8 @@ export function PlayerCard({
             leaguePoints={leaguePoints}
             wins={wins}
             losses={losses}
+            updatedAt={statsUpdatedAt}
+            isStale={isStatsStale}
           />
         </div>
       </div>

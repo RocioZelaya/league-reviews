@@ -1,7 +1,9 @@
 import { RankEmblem } from "@/components/ui/RankEmblem";
+import { StaleNotice } from "@/components/ui/StaleNotice";
 import { computeWinrate, formatTier } from "@/lib/format";
 
 const EMBLEM_SIZE = 80;
+const STALE_LABEL = "Datos desactualizados · Riot no respondió";
 
 type RankSummaryProps = {
   tier: string | null;
@@ -9,6 +11,8 @@ type RankSummaryProps = {
   leaguePoints: number | null;
   wins: number | null;
   losses: number | null;
+  updatedAt: Date | null;
+  isStale: boolean;
 };
 
 export function RankSummary({
@@ -17,6 +21,8 @@ export function RankSummary({
   leaguePoints,
   wins,
   losses,
+  updatedAt,
+  isStale,
 }: RankSummaryProps) {
   if (!tier) {
     return (
@@ -53,6 +59,7 @@ export function RankSummary({
           </span>
         </p>
         <WinrateBar wins={safeWins} losses={safeLosses} winrate={winrate} />
+        {isStale && <StaleNotice label={STALE_LABEL} updatedAt={updatedAt} />}
       </div>
     </div>
   );

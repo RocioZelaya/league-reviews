@@ -45,9 +45,9 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
     notFound();
   }
 
-  let account;
+  let playerData;
   try {
-    account = await getPlayerData(gameName, tagLine);
+    playerData = await getPlayerData(gameName, tagLine);
   } catch (error) {
     if (error instanceof RiotNotFoundError) {
       notFound();
@@ -55,6 +55,7 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
     throw error;
   }
 
+  const { account, stale } = playerData;
   const viewerAnonId = (await cookies()).get(ANON_ID_COOKIE)?.value ?? null;
   const [comments, dataDragonVersion] = await Promise.all([
     getCommentsForAccount(account.id, viewerAnonId),
@@ -74,6 +75,8 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
         leaguePoints={account.soloLp}
         wins={account.soloWins}
         losses={account.soloLosses}
+        statsUpdatedAt={account.statsUpdatedAt}
+        isStatsStale={stale.stats}
         reviewSummary={reviewSummary}
       />
 
@@ -91,6 +94,8 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
             <MatchList
               matches={matches}
               dataDragonVersion={dataDragonVersion}
+              updatedAt={account.matchesUpdatedAt}
+              isStale={stale.matches}
             />
           </section>
         </div>
