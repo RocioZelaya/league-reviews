@@ -1,47 +1,73 @@
 "use client";
 
-import { ReviewTag } from "@prisma/client";
+import type { ReviewTag } from "@prisma/client";
 import { MAX_TAGS_PER_COMMENT } from "@/lib/validation";
-
-const ALL_TAGS = Object.values(ReviewTag);
+import {
+  ALL_REVIEW_TAGS,
+  REVIEW_TAG_META,
+  type TagSentiment,
+} from "@/lib/reviewTags";
 
 type TagSelectorProps = {
   selected: ReviewTag[];
   onChange: (tags: ReviewTag[]) => void;
 };
 
+const SELECTED_CLASSES: Record<TagSentiment, string> = {
+  positive: "border-cyan bg-cyan text-void",
+  negative: "border-magenta bg-magenta text-void",
+};
+
+const IDLE_CLASSES: Record<TagSentiment, string> = {
+  positive:
+    "border-line-strong text-text-dim hover:border-cyan hover:text-cyan",
+  negative:
+    "border-line-strong text-text-dim hover:border-magenta hover:text-magenta",
+};
+
 export function TagSelector({ selected, onChange }: TagSelectorProps) {
+  const isAtLimit = selected.length >= MAX_TAGS_PER_COMMENT;
+
   function toggleTag(tag: ReviewTag) {
     if (selected.includes(tag)) {
-      onChange(selected.filter((t) => t !== tag));
+      onChange(selected.filter((current) => current !== tag));
       return;
     }
-    if (selected.length >= MAX_TAGS_PER_COMMENT) {
-      return;
-    }
+    if (isAtLimit) return;
     onChange([...selected, tag]);
   }
 
   return (
-    <div className="flex flex-wrap gap-2">
-      {ALL_TAGS.map((tag) => {
-        const isSelected = selected.includes(tag);
-        return (
-          <button
-            key={tag}
-            type="button"
-            aria-pressed={isSelected}
-            onClick={() => toggleTag(tag)}
-            className={`rounded-full border px-3 py-1 text-sm ${
-              isSelected
-                ? "border-black bg-black text-white"
-                : "border-neutral-300 text-neutral-700"
-            }`}
-          >
-            {tag.replaceAll("_", " ").toLowerCase()}
-          </button>
-        );
-      })}
-    </div>
+    <fieldset className="flex flex-col gap-2">
+      <legend className="mb-2 flex w-full items-center justify-between text-sm">
+        <span className="text-text-dim">Tags</span>
+        <span className="font-mono text-xs text-text-mute">
+          {selected.length}/{MAX_TAGS_PER_COMMENT}
+        </span>
+      </legend>
+      <div className="flex flex-wrap gap-2">
+        {ALL_REVIEW_TAGS.map((tag) => {
+          const { label, sentiment } = REVIEW_TAG_META[tag];
+          const isSelected = selected.includes(tag);
+          const isDisabled = !isSelected && isAtLimit;
+          return (
+            <button
+              key={tag}
+              type="button"
+              aria-pressed={isSelected}
+              disabled={isDisabled}
+              onClick={() => toggleTag(tag)}
+              className={`rounded-full border px-3 py-1 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                isSelected
+                  ? SELECTED_CLASSES[sentiment]
+                  : IDLE_CLASSES[sentiment]
+              }`}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+    </fieldset>
   );
 }

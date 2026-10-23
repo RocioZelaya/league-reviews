@@ -5,6 +5,12 @@ const nextConfig: NextConfig = {
     root: __dirname,
   },
   agentRules: false,
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "ddragon.leagueoflegends.com" },
+      { protocol: "https", hostname: "raw.communitydragon.org" },
+    ],
+  },
 };
 
 export default nextConfig;

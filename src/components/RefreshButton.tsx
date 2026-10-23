@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/Button";
+import { InlineError } from "@/components/ui/InlineError";
 
 type RefreshButtonProps = {
   riotId: string;
@@ -33,15 +35,35 @@ export function RefreshButton({ riotId }: RefreshButtonProps) {
 
   return (
     <div className="flex flex-col items-end gap-1">
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={handleRefresh}
         disabled={isRefreshing}
-        className="text-sm text-neutral-500 underline disabled:opacity-50"
+        aria-busy={isRefreshing}
       >
-        {isRefreshing ? "Actualizando..." : "Actualizar datos"}
-      </button>
-      {error && <p className="text-xs text-red-600">{error}</p>}
+        <RefreshIcon spinning={isRefreshing} />
+        {isRefreshing ? "Actualizando" : "Actualizar"}
+      </Button>
+      <InlineError message={error} />
     </div>
+  );
+}
+
+function RefreshIcon({ spinning }: { spinning: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={`size-4 ${spinning ? "animate-spin" : ""}`}
+    >
+      <path d="M21 12a9 9 0 1 1-2.6-6.4" />
+      <path d="M21 3v6h-6" />
+    </svg>
   );
 }

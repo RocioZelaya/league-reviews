@@ -12,9 +12,11 @@ Sin login, sin cuentas: dejás tu review y listo.
 - **Perfil del jugador** — rank de soloQ (tier, división, LP, wins/losses), campeones más jugados con winrate, y las últimas 5 partidas. Todo desde la API oficial de Riot.
 - **Reviews** — texto libre (1-1000 caracteres), rating de 1 a 5 estrellas y hasta 3 tags de comportamiento.
 - **Votos** — arriba/abajo en cada review, un voto por identidad, con toggle para sacarlo.
-- **Top comentarios en la home** — las mejores reviews de toda la plataforma, ordenadas por score, cada una linkeando al perfil del jugador.
+- **Top comentarios en la home** — las mejores reviews de toda la plataforma, ordenadas por score, cada una linkeando al perfil del jugador, más un ranking de los jugadores con más reviews.
+- **Resumen por jugador** — rating promedio y los tags más repetidos arriba del perfil, con emblema de rank e íconos de campeón (Data Dragon / Community Dragon, sin API key).
 - **Moderación sin admin** — filtro de lenguaje al publicar, reportes de la comunidad y auto-ocultamiento a los 5 reports.
 - **Anti-abuso** — identidad anónima por cookie y rate limiting por IP hasheada.
+- **Tema único oscuro** (“Arcane neon”): tokens en `src/app/globals.css`, primitivas en `src/components/ui`, sin modo claro.
 
 ### Tags disponibles
 

@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/lib/db";
-import { voteSchema } from "@/lib/validation";
+import { voteSchema, type VoteValue } from "@/lib/validation";
 import { hashIp, getClientIp } from "@/lib/hash";
 import {
   checkRateLimit,
@@ -38,13 +38,15 @@ export async function POST(request: NextRequest, context: RouteContext) {
     throw error;
   }
 
-  const comment = await db.$transaction(async (tx) => {
+  const { comment, resultingVote } = await db.$transaction(async (tx) => {
     const existingVote = await tx.vote.findUnique({
       where: { commentId_anonId: { commentId, anonId } },
     });
 
+    let resultingVote: VoteValue | null = value;
     if (existingVote?.value === value) {
       await tx.vote.delete({ where: { id: existingVote.id } });
+      resultingVote = null;
     } else if (existingVote) {
       await tx.vote.update({
         where: { id: existingVote.id },
@@ -59,15 +61,17 @@ export async function POST(request: NextRequest, context: RouteContext) {
       tx.vote.count({ where: { commentId, value: -1 } }),
     ]);
 
-    return tx.comment.update({
+    const updated = await tx.comment.update({
       where: { id: commentId },
       data: { upvotes, downvotes, score: upvotes - downvotes },
     });
+    return { comment: updated, resultingVote };
   });
 
   return NextResponse.json({
     upvotes: comment.upvotes,
     downvotes: comment.downvotes,
     score: comment.score,
+    vote: resultingVote,
   });
 }
