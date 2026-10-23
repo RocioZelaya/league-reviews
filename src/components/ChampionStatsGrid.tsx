@@ -1,10 +1,13 @@
 import { ChampionIcon } from "@/components/ui/ChampionIcon";
 import { EmptyState } from "@/components/ui/EmptyState";
+import type { Dictionary } from "@/lib/i18n/dictionary";
+import { formatCount } from "@/lib/i18n/message";
 import type { ChampionStat } from "@/types";
 
 type ChampionStatsGridProps = {
   championStats: ChampionStat[];
   dataDragonVersion: string;
+  dictionary: Dictionary;
 };
 
 const WINRATE_HIGHLIGHT_THRESHOLD = 50;
@@ -13,9 +16,10 @@ const CHAMPION_ICON_SIZE = 36;
 export function ChampionStatsGrid({
   championStats,
   dataDragonVersion,
+  dictionary,
 }: ChampionStatsGridProps) {
   if (championStats.length === 0) {
-    return <EmptyState title="Sin campeones jugados recientemente." />;
+    return <EmptyState title={dictionary.player.noChampions} />;
   }
 
   return (
@@ -33,7 +37,7 @@ export function ChampionStatsGrid({
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">{stat.championName}</p>
             <p className="font-mono text-xs text-text-mute">
-              {stat.games} {stat.games === 1 ? "partida" : "partidas"} ·{" "}
+              {formatCount(stat.games, dictionary.match.games)} ·{" "}
               <span
                 className={
                   stat.winrate >= WINRATE_HIGHLIGHT_THRESHOLD

@@ -2,11 +2,11 @@ import type { CommentTag } from "@prisma/client";
 import { Stars } from "@/components/ui/Stars";
 import { TagBadge } from "@/components/ui/TagBadge";
 import { RelativeTime } from "@/components/ui/RelativeTime";
-import type { VoteValue } from "@/lib/validation";
+import type { Dictionary } from "@/lib/i18n/dictionary";
+import { interpolate } from "@/lib/i18n/message";
+import { MAX_RATING, type VoteValue } from "@/lib/validation";
 import { VoteButtons } from "./VoteButtons";
 import { ReportButton } from "./ReportButton";
-
-const ANONYMOUS_LABEL = "Anónimo";
 
 type CommentItemProps = {
   id: string;
@@ -17,6 +17,7 @@ type CommentItemProps = {
   tags: CommentTag[];
   createdAt: Date;
   viewerVote: VoteValue | null;
+  dictionary: Dictionary;
 };
 
 export function CommentItem({
@@ -28,7 +29,9 @@ export function CommentItem({
   tags,
   createdAt,
   viewerVote,
+  dictionary,
 }: CommentItemProps) {
+  const { comments, rating: ratingCopy, reviewTags } = dictionary;
   return (
     <li
       id={`comment-${id}`}
@@ -36,18 +39,23 @@ export function CommentItem({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate font-medium">{nickname ?? ANONYMOUS_LABEL}</p>
+          <p className="truncate font-medium">
+            {nickname ?? comments.anonymous}
+          </p>
           <p className="font-mono text-xs text-text-mute">
             <RelativeTime timestampMs={createdAt.getTime()} />
           </p>
         </div>
-        <Stars rating={rating} />
+        <Stars
+          rating={rating}
+          label={interpolate(ratingCopy.outOf, { rating, max: MAX_RATING })}
+        />
       </div>
       <p className="whitespace-pre-line text-text-dim">{body}</p>
       {tags.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {tags.map((tag) => (
-            <TagBadge key={tag.id} tag={tag.tag} />
+            <TagBadge key={tag.id} tag={tag.tag} label={reviewTags[tag.tag]} />
           ))}
         </div>
       )}

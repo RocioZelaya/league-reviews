@@ -1,5 +1,6 @@
 import type { Comment, CommentTag } from "@prisma/client";
 import { voteValueSchema } from "@/lib/validation";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CommentItem } from "./CommentItem";
 
@@ -16,14 +17,15 @@ function readViewerVote(votes: Array<{ value: number }> | undefined) {
 
 type CommentListProps = {
   comments: CommentWithTags[];
+  dictionary: Dictionary;
 };
 
-export function CommentList({ comments }: CommentListProps) {
+export function CommentList({ comments, dictionary }: CommentListProps) {
   if (comments.length === 0) {
     return (
       <EmptyState
-        title="Todavía no hay reviews de este jugador."
-        description="La primera la dejás vos, arriba."
+        title={dictionary.comments.noneTitle}
+        description={dictionary.comments.noneDescription}
       />
     );
   }
@@ -41,6 +43,7 @@ export function CommentList({ comments }: CommentListProps) {
           tags={comment.tags}
           createdAt={comment.createdAt}
           viewerVote={readViewerVote(comment.votes)}
+          dictionary={dictionary}
         />
       ))}
     </ul>

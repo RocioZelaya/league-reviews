@@ -2,20 +2,14 @@
 
 import { useState } from "react";
 import { MAX_RATING } from "@/lib/validation";
+import { formatCount } from "@/lib/i18n/message";
+import { useDictionary } from "@/components/i18n/LocaleProvider";
 import { StarIcon } from "@/components/ui/StarIcon";
 
 const RATING_VALUES = Array.from(
   { length: MAX_RATING },
   (_, index) => index + 1,
 );
-
-const RATING_LABELS: Record<number, string> = {
-  1: "Evitar",
-  2: "Flojo",
-  3: "Normal",
-  4: "Bueno",
-  5: "Excelente",
-};
 
 type StarRatingProps = {
   value: number;
@@ -24,6 +18,7 @@ type StarRatingProps = {
 };
 
 export function StarRating({ value, onChange, labelledBy }: StarRatingProps) {
+  const { rating } = useDictionary();
   const [hovered, setHovered] = useState(0);
   const displayed = hovered || value;
 
@@ -41,7 +36,7 @@ export function StarRating({ value, onChange, labelledBy }: StarRatingProps) {
             type="button"
             role="radio"
             aria-checked={value === star}
-            aria-label={`${star} ${star === 1 ? "estrella" : "estrellas"}`}
+            aria-label={formatCount(star, rating.stars)}
             onClick={() => onChange(star)}
             onMouseEnter={() => setHovered(star)}
             onFocus={() => setHovered(star)}
@@ -60,7 +55,7 @@ export function StarRating({ value, onChange, labelledBy }: StarRatingProps) {
         className="min-w-20 font-mono text-xs text-text-mute"
         aria-live="polite"
       >
-        {displayed > 0 ? RATING_LABELS[displayed] : "Elegí un rating"}
+        {displayed > 0 ? rating.labels[displayed] : rating.pick}
       </span>
     </div>
   );

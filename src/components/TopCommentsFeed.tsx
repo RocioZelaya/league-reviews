@@ -1,11 +1,14 @@
 import Link from "next/link";
 import type { Comment, CommentTag } from "@prisma/client";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { RelativeTime } from "@/components/ui/RelativeTime";
 import { Stars } from "@/components/ui/Stars";
 import { TagBadge } from "@/components/ui/TagBadge";
-import { RelativeTime } from "@/components/ui/RelativeTime";
 import { formatTier } from "@/lib/format";
+import type { Dictionary } from "@/lib/i18n/dictionary";
+import { interpolate } from "@/lib/i18n/message";
 import { buildPlayerPath, formatRiotId } from "@/lib/riotId";
+import { MAX_RATING } from "@/lib/validation";
 import { VoteButtons } from "./VoteButtons";
 
 type TopComment = Comment & {
@@ -15,16 +18,27 @@ type TopComment = Comment & {
 
 type TopCommentsFeedProps = {
   comments: TopComment[];
+  dictionary: Dictionary;
 };
 
-const ANONYMOUS_LABEL = "Anónimo";
+export function TopCommentsFeed({
+  comments,
+  dictionary,
+}: TopCommentsFeedProps) {
+  const {
+    home,
+    comments: commentsCopy,
+    rank,
+    rating,
+    reviewTags,
+    tiers,
+  } = dictionary;
 
-export function TopCommentsFeed({ comments }: TopCommentsFeedProps) {
   if (comments.length === 0) {
     return (
       <EmptyState
-        title="Todavía no hay reviews publicadas."
-        description="Buscá a alguien y dejá la primera."
+        title={home.noReviewsTitle}
+        description={home.noReviewsDescription}
       />
     );
   }
@@ -55,14 +69,22 @@ export function TopCommentsFeed({ comments }: TopCommentsFeedProps) {
                     {formatRiotId(gameName, tagLine)}
                   </Link>
                   <p className="font-mono text-xs text-text-mute">
-                    {soloTier ? formatTier(soloTier, null) : "Sin clasificar"}
+                    {soloTier
+                      ? formatTier(soloTier, null, tiers)
+                      : rank.unranked}
                     {" · "}
-                    {comment.nickname ?? ANONYMOUS_LABEL}
+                    {comment.nickname ?? commentsCopy.anonymous}
                     {" · "}
                     <RelativeTime timestampMs={comment.createdAt.getTime()} />
                   </p>
                 </div>
-                <Stars rating={comment.rating} />
+                <Stars
+                  rating={comment.rating}
+                  label={interpolate(rating.outOf, {
+                    rating: comment.rating,
+                    max: MAX_RATING,
+                  })}
+                />
               </div>
               <p className="line-clamp-4 whitespace-pre-line text-text-dim">
                 {comment.body}
@@ -70,7 +92,11 @@ export function TopCommentsFeed({ comments }: TopCommentsFeedProps) {
               {comment.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {comment.tags.map((tag) => (
-                    <TagBadge key={tag.id} tag={tag.tag} />
+                    <TagBadge
+                      key={tag.id}
+                      tag={tag.tag}
+                      label={reviewTags[tag.tag]}
+                    />
                   ))}
                 </div>
               )}
@@ -83,7 +109,7 @@ export function TopCommentsFeed({ comments }: TopCommentsFeedProps) {
                   href={playerHref}
                   className="font-mono text-xs text-text-mute transition-colors hover:text-cyan"
                 >
-                  Ver perfil →
+                  {home.viewProfile}
                 </Link>
               </div>
             </div>

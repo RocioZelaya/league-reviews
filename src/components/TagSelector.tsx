@@ -4,9 +4,10 @@ import type { ReviewTag } from "@prisma/client";
 import { MAX_TAGS_PER_COMMENT } from "@/lib/validation";
 import {
   ALL_REVIEW_TAGS,
-  REVIEW_TAG_META,
+  REVIEW_TAG_SENTIMENT,
   type TagSentiment,
 } from "@/lib/reviewTags";
+import { useDictionary } from "@/components/i18n/LocaleProvider";
 
 type TagSelectorProps = {
   selected: ReviewTag[];
@@ -26,6 +27,7 @@ const IDLE_CLASSES: Record<TagSentiment, string> = {
 };
 
 export function TagSelector({ selected, onChange }: TagSelectorProps) {
+  const { commentForm, reviewTags } = useDictionary();
   const isAtLimit = selected.length >= MAX_TAGS_PER_COMMENT;
 
   function toggleTag(tag: ReviewTag) {
@@ -40,14 +42,14 @@ export function TagSelector({ selected, onChange }: TagSelectorProps) {
   return (
     <fieldset className="flex flex-col gap-2">
       <legend className="mb-2 flex w-full items-center justify-between text-sm">
-        <span className="text-text-dim">Tags</span>
+        <span className="text-text-dim">{commentForm.tagsLegend}</span>
         <span className="font-mono text-xs text-text-mute">
           {selected.length}/{MAX_TAGS_PER_COMMENT}
         </span>
       </legend>
       <div className="flex flex-wrap gap-2">
         {ALL_REVIEW_TAGS.map((tag) => {
-          const { label, sentiment } = REVIEW_TAG_META[tag];
+          const sentiment = REVIEW_TAG_SENTIMENT[tag];
           const isSelected = selected.includes(tag);
           const isDisabled = !isSelected && isAtLimit;
           return (
@@ -63,7 +65,7 @@ export function TagSelector({ selected, onChange }: TagSelectorProps) {
                   : IDLE_CLASSES[sentiment]
               }`}
             >
-              {label}
+              {reviewTags[tag]}
             </button>
           );
         })}

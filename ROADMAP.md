@@ -226,6 +226,13 @@ Casos borde:
 
 ---
 
+## Post-MVP — hecho
+
+- [x] Rediseño con tema único oscuro ("Arcane neon"), primitivas de UI, emblemas e íconos de campeón.
+- [x] Idioma: inglés por default y toggle a español en el header, guardado en cookie `locale` (sin cambiar URLs). Diccionarios tipados en `src/lib/i18n/`.
+- [x] Errores de API por código estable (`src/lib/apiErrors.ts`) en vez de strings localizados.
+- [x] Si Riot falla con cache vencida, el perfil marca rank y partidas como desactualizados y el refresh manual devuelve `502 UPSTREAM_FAILED`.
+
 ## Fuera de alcance del MVP (§11)
 
 Backlog post-MVP, **no** pendientes de este roadmap. El schema ya está diseñado para no bloquearlos: `anonId` está desacoplado de cualquier tabla de usuarios, así que se puede agregar `User` + FK nullable en `Comment` sin romper nada.

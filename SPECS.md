@@ -214,9 +214,11 @@ Notas:
 
 ## 8. API de mutaciones
 
+Todas las respuestas de error son `{ error: CODE }` con un código estable definido en `src/lib/apiErrors.ts` (`INVALID_INPUT` 400, `PROFANITY` 400, `RATE_LIMITED` 429, `NOT_FOUND` 404, `UPSTREAM_FAILED` 502). El texto que ve el usuario lo elige el cliente según el idioma activo; la API nunca devuelve copy.
+
 - **`POST /api/comments`** — body `{ riotAccountId, body, rating, tags[], anonId, nickname? }`:
   1. Validar con zod (texto 1-1000 chars, rating entero 1-5, tags del enum, máx 3 tags).
-  2. `containsProfanity(body)` → si true, rechazar con mensaje claro (no censura silenciosa).
+  2. `containsProfanity(body)` → si true, rechazar con `PROFANITY` (no censura silenciosa).
   3. `checkRateLimit` por IP hasheada (5/hora).
   4. Crear `Comment` + `CommentTag[]` en transacción.
   5. `revalidatePath` de la página del jugador y de home.

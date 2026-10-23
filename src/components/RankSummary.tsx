@@ -1,9 +1,9 @@
 import { RankEmblem } from "@/components/ui/RankEmblem";
 import { StaleNotice } from "@/components/ui/StaleNotice";
 import { computeWinrate, formatTier } from "@/lib/format";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 
 const EMBLEM_SIZE = 80;
-const STALE_LABEL = "Datos desactualizados · Riot no respondió";
 
 type RankSummaryProps = {
   tier: string | null;
@@ -13,6 +13,7 @@ type RankSummaryProps = {
   losses: number | null;
   updatedAt: Date | null;
   isStale: boolean;
+  dictionary: Dictionary;
 };
 
 export function RankSummary({
@@ -23,7 +24,10 @@ export function RankSummary({
   losses,
   updatedAt,
   isStale,
+  dictionary,
 }: RankSummaryProps) {
+  const { rank: rankCopy, tiers } = dictionary;
+
   if (!tier) {
     return (
       <div className="flex items-center gap-4">
@@ -32,10 +36,10 @@ export function RankSummary({
         </div>
         <div>
           <p className="font-mono text-xs tracking-widest text-text-mute uppercase">
-            SoloQ
+            {rankCopy.queue}
           </p>
-          <p className="font-display text-lg font-bold">Sin clasificar</p>
-          <p className="text-sm text-text-mute">Sin partidas de ranked.</p>
+          <p className="font-display text-lg font-bold">{rankCopy.unranked}</p>
+          <p className="text-sm text-text-mute">{rankCopy.noRankedGames}</p>
         </div>
       </div>
     );
@@ -50,16 +54,23 @@ export function RankSummary({
       <RankEmblem tier={tier} size={EMBLEM_SIZE} />
       <div className="flex min-w-40 flex-col gap-1.5">
         <p className="font-mono text-xs tracking-widest text-text-mute uppercase">
-          SoloQ
+          {rankCopy.queue}
         </p>
         <p className="font-display text-lg leading-tight font-bold">
-          {formatTier(tier, rank)}
+          {formatTier(tier, rank, tiers)}
           <span className="ml-2 font-mono text-sm font-medium text-cyan">
             {leaguePoints ?? 0} LP
           </span>
         </p>
-        <WinrateBar wins={safeWins} losses={safeLosses} winrate={winrate} />
-        {isStale && <StaleNotice label={STALE_LABEL} updatedAt={updatedAt} />}
+        <WinrateBar
+          wins={safeWins}
+          losses={safeLosses}
+          winrate={winrate}
+          copy={rankCopy}
+        />
+        {isStale && (
+          <StaleNotice label={rankCopy.outdated} updatedAt={updatedAt} />
+        )}
       </div>
     </div>
   );
@@ -69,14 +80,15 @@ type WinrateBarProps = {
   wins: number;
   losses: number;
   winrate: number;
+  copy: Dictionary["rank"];
 };
 
-function WinrateBar({ wins, losses, winrate }: WinrateBarProps) {
+function WinrateBar({ wins, losses, winrate, copy }: WinrateBarProps) {
   return (
     <div className="flex flex-col gap-1">
       <div
         role="meter"
-        aria-label="Winrate"
+        aria-label={copy.winrateLabel}
         aria-valuenow={winrate}
         aria-valuemin={0}
         aria-valuemax={100}
@@ -85,10 +97,19 @@ function WinrateBar({ wins, losses, winrate }: WinrateBarProps) {
         <div className="h-full bg-cyan" style={{ width: `${winrate}%` }} />
       </div>
       <p className="font-mono text-xs text-text-dim">
-        <span className="text-cyan">{wins}V</span>
+        <span className="text-cyan">
+          {wins}
+          {copy.winsSuffix}
+        </span>
         <span className="text-text-mute"> / </span>
-        <span className="text-magenta">{losses}D</span>
-        <span className="text-text-mute"> · {winrate}% WR</span>
+        <span className="text-magenta">
+          {losses}
+          {copy.lossesSuffix}
+        </span>
+        <span className="text-text-mute">
+          {" "}
+          · {winrate}% {copy.winrateSuffix}
+        </span>
       </p>
     </div>
   );

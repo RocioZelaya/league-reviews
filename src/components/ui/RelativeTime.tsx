@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { useDictionary, useLocale } from "@/components/i18n/LocaleProvider";
 import {
   formatAbsoluteDate,
   formatRelativeTime,
@@ -11,11 +12,6 @@ type RelativeTimeProps = {
   timestampMs: number;
   variant?: "long" | "short";
   className?: string;
-};
-
-const FORMATTERS = {
-  long: formatRelativeTime,
-  short: formatRelativeTimeShort,
 };
 
 function subscribeToNothing() {
@@ -32,10 +28,9 @@ function useIsHydrated(): boolean {
 }
 
 /**
- * Relative time that is safe to prerender: the server and the hydrating
- * render both show a timezone-independent absolute date, and the relative
- * label only appears once the client owns the tree, so a statically cached
- * page never freezes "hace un momento" and hydration never mismatches.
+ * The server and the hydrating render both show a timezone-independent
+ * absolute date; the relative label only appears once the client owns the
+ * tree, so the two never disagree and hydration never mismatches.
  */
 export function RelativeTime({
   timestampMs,
@@ -43,9 +38,17 @@ export function RelativeTime({
   className,
 }: RelativeTimeProps) {
   const isHydrated = useIsHydrated();
-  const label = isHydrated
-    ? FORMATTERS[variant](timestampMs)
-    : formatAbsoluteDate(timestampMs);
+  const locale = useLocale();
+  const { time } = useDictionary();
+
+  let label: string;
+  if (!isHydrated) {
+    label = formatAbsoluteDate(timestampMs, locale);
+  } else if (variant === "short") {
+    label = formatRelativeTimeShort(timestampMs, time);
+  } else {
+    label = formatRelativeTime(timestampMs, locale, time);
+  }
 
   return (
     <time dateTime={new Date(timestampMs).toISOString()} className={className}>

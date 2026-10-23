@@ -1,14 +1,21 @@
 import { ChampionIcon } from "@/components/ui/ChampionIcon";
 import { RelativeTime } from "@/components/ui/RelativeTime";
 import { formatDuration, formatKdaRatio, formatRole } from "@/lib/format";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { MatchSummary } from "@/types";
 
 type MatchItemProps = {
   match: MatchSummary;
   dataDragonVersion: string;
+  dictionary: Dictionary;
 };
 
-export function MatchItem({ match, dataDragonVersion }: MatchItemProps) {
+export function MatchItem({
+  match,
+  dataDragonVersion,
+  dictionary,
+}: MatchItemProps) {
+  const { match: matchCopy, roles } = dictionary;
   const outcomeColor = match.win ? "bg-cyan" : "bg-magenta";
   const outcomeText = match.win ? "text-cyan" : "text-magenta";
 
@@ -28,14 +35,17 @@ export function MatchItem({ match, dataDragonVersion }: MatchItemProps) {
           <span
             className={`shrink-0 font-display text-xs font-bold ${outcomeText}`}
           >
-            <span aria-hidden="true">{match.win ? "V" : "D"}</span>
+            <span aria-hidden="true">
+              {match.win ? matchCopy.winShort : matchCopy.lossShort}
+            </span>
             <span className="sr-only">
-              {match.win ? "Victoria" : "Derrota"}
+              {match.win ? matchCopy.win : matchCopy.loss}
             </span>
           </span>
         </p>
         <p className="truncate font-mono text-xs text-text-mute">
-          {formatRole(match.role)} · {formatDuration(match.durationSeconds)} ·{" "}
+          {formatRole(match.role, roles)} ·{" "}
+          {formatDuration(match.durationSeconds)} ·{" "}
           <RelativeTime timestampMs={match.playedAt} variant="short" />
         </p>
       </div>
@@ -48,7 +58,13 @@ export function MatchItem({ match, dataDragonVersion }: MatchItemProps) {
           {match.assists}
         </p>
         <p className="font-mono text-xs text-text-mute">
-          {formatKdaRatio(match.kills, match.deaths, match.assists)} KDA
+          {formatKdaRatio(
+            match.kills,
+            match.deaths,
+            match.assists,
+            matchCopy.perfectKda,
+          )}{" "}
+          KDA
         </p>
       </div>
     </li>

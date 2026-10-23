@@ -8,17 +8,15 @@ import {
   getClientNickname,
   setClientNickname,
 } from "@/lib/anon";
+import { readApiErrorCode } from "@/lib/apiErrors";
+import { apiErrorMessage } from "@/lib/i18n/apiErrorMessage";
 import { MAX_COMMENT_LENGTH, MAX_NICKNAME_LENGTH } from "@/lib/validation";
+import { useDictionary } from "@/components/i18n/LocaleProvider";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { InlineError } from "@/components/ui/InlineError";
 import { StarRating } from "./StarRating";
 import { TagSelector } from "./TagSelector";
-
-const MISSING_RATING_MESSAGE = "Elegí un rating de 1 a 5 estrellas.";
-const MISSING_SESSION_MESSAGE =
-  "No se pudo identificar tu sesión. Recargá la página.";
-const PUBLISH_FAILED_MESSAGE = "No se pudo publicar la review.";
 
 const FIELD_CLASSES =
   "rounded-md border border-line-strong bg-void px-3 py-2 text-text placeholder:text-text-mute focus:border-cyan focus:shadow-glow-cyan focus:outline-none";
@@ -29,6 +27,8 @@ type CommentFormProps = {
 
 export function CommentForm({ riotAccountId }: CommentFormProps) {
   const router = useRouter();
+  const dictionary = useDictionary();
+  const { commentForm, rating: ratingCopy, errors } = dictionary;
   const [body, setBody] = useState("");
   const [rating, setRating] = useState(0);
   const [tags, setTags] = useState<ReviewTag[]>([]);
@@ -41,13 +41,13 @@ export function CommentForm({ riotAccountId }: CommentFormProps) {
     setError(null);
 
     if (rating === 0) {
-      setError(MISSING_RATING_MESSAGE);
+      setError(commentForm.missingRating);
       return;
     }
 
     const anonId = getClientAnonId();
     if (!anonId) {
-      setError(MISSING_SESSION_MESSAGE);
+      setError(errors.sessionMissing);
       return;
     }
 
@@ -72,8 +72,8 @@ export function CommentForm({ riotAccountId }: CommentFormProps) {
       });
 
       if (!response.ok) {
-        const data = (await response.json()) as { error?: string };
-        setError(data.error ?? PUBLISH_FAILED_MESSAGE);
+        const code = await readApiErrorCode(response);
+        setError(apiErrorMessage(code, dictionary, errors.publishFailed));
         return;
       }
 
@@ -91,7 +91,7 @@ export function CommentForm({ riotAccountId }: CommentFormProps) {
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
           <p id="comment-rating-label" className="text-sm text-text-dim">
-            ¿Cómo es jugar con esta persona?
+            {ratingCopy.prompt}
           </p>
           <StarRating
             value={rating}
@@ -106,8 +106,8 @@ export function CommentForm({ riotAccountId }: CommentFormProps) {
             value={body}
             onChange={(event) => setBody(event.target.value)}
             maxLength={MAX_COMMENT_LENGTH}
-            placeholder="Contá cómo fue. Sin insultos, que se filtran."
-            aria-label="Review"
+            placeholder={commentForm.bodyPlaceholder}
+            aria-label={commentForm.bodyLabel}
             rows={4}
             className={`${FIELD_CLASSES} resize-y`}
           />
@@ -124,8 +124,8 @@ export function CommentForm({ riotAccountId }: CommentFormProps) {
             value={nickname}
             onChange={(event) => setNickname(event.target.value)}
             maxLength={MAX_NICKNAME_LENGTH}
-            placeholder="Tu nombre (opcional)"
-            aria-label="Nickname"
+            placeholder={commentForm.nicknamePlaceholder}
+            aria-label={commentForm.nicknameLabel}
             autoComplete="nickname"
             className={`${FIELD_CLASSES} h-10 sm:max-w-56`}
           />
@@ -134,7 +134,7 @@ export function CommentForm({ riotAccountId }: CommentFormProps) {
             disabled={isSubmitting || body.trim().length === 0}
             aria-busy={isSubmitting}
           >
-            {isSubmitting ? "Publicando" : "Publicar review"}
+            {isSubmitting ? commentForm.submitting : commentForm.submit}
           </Button>
         </div>
         <InlineError message={error} />

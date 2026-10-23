@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { reportSchema } from "@/lib/validation";
+import { apiErrorResponse } from "@/lib/apiErrors";
 import { hashIp, getClientIp } from "@/lib/hash";
 import {
   checkRateLimit,
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   const { id: commentId } = await context.params;
   const parsed = reportSchema.safeParse(await request.json());
   if (!parsed.success) {
-    return NextResponse.json({ error: "Reporte inválido." }, { status: 400 });
+    return apiErrorResponse("INVALID_INPUT");
   }
 
   const { anonId, reason } = parsed.data;
@@ -32,10 +33,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     );
   } catch (error) {
     if (error instanceof RateLimitExceededError) {
-      return NextResponse.json(
-        { error: "Alcanzaste el límite de reportes por hora." },
-        { status: 429 },
-      );
+      return apiErrorResponse("RATE_LIMITED");
     }
     throw error;
   }

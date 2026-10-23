@@ -1,3 +1,6 @@
+import { getDictionary } from "@/lib/i18n/dictionary";
+import { getLocale } from "@/lib/i18n/server";
+
 const CHAMPION_SKELETON_COUNT = 3;
 const MATCH_SKELETON_COUNT = 5;
 const COMMENT_SKELETON_COUNT = 2;
@@ -8,11 +11,12 @@ function Skeleton({ className }: { className: string }) {
   );
 }
 
-export default function PlayerLoading() {
+export default async function PlayerLoading() {
+  const { player } = getDictionary(await getLocale());
   return (
     <main
       aria-busy="true"
-      aria-label="Cargando perfil"
+      aria-label={player.loading}
       className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-8"
     >
       <Skeleton className="h-44" />

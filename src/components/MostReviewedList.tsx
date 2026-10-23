@@ -2,15 +2,23 @@ import Link from "next/link";
 import { EmptyState } from "@/components/ui/EmptyState";
 import type { MostReviewedAccount } from "@/lib/comments";
 import { formatTier } from "@/lib/format";
+import type { Dictionary } from "@/lib/i18n/dictionary";
+import { formatCount } from "@/lib/i18n/message";
 import { buildPlayerPath } from "@/lib/riotId";
 
 type MostReviewedListProps = {
   accounts: MostReviewedAccount[];
+  dictionary: Dictionary;
 };
 
-export function MostReviewedList({ accounts }: MostReviewedListProps) {
+export function MostReviewedList({
+  accounts,
+  dictionary,
+}: MostReviewedListProps) {
+  const { home, player, rank, tiers } = dictionary;
+
   if (accounts.length === 0) {
-    return <EmptyState title="Nadie tiene reviews todavía." />;
+    return <EmptyState title={home.noPlayersTitle} />;
   }
 
   return (
@@ -31,15 +39,12 @@ export function MostReviewedList({ accounts }: MostReviewedListProps) {
               </p>
               <p className="font-mono text-xs text-text-mute">
                 {account.soloTier
-                  ? formatTier(account.soloTier, null)
-                  : "Sin clasificar"}
+                  ? formatTier(account.soloTier, null, tiers)
+                  : rank.unranked}
               </p>
             </div>
-            <p className="font-mono text-sm text-magenta">
-              {account.reviewCount}
-              <span className="ml-1 text-xs text-text-mute">
-                {account.reviewCount === 1 ? "review" : "reviews"}
-              </span>
+            <p className="font-mono text-xs text-magenta">
+              {formatCount(account.reviewCount, player.reviewCount)}
             </p>
           </Link>
         </li>

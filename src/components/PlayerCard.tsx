@@ -1,8 +1,11 @@
 import { Card } from "@/components/ui/Card";
 import { Stars } from "@/components/ui/Stars";
 import { TagBadge } from "@/components/ui/TagBadge";
+import type { Dictionary } from "@/lib/i18n/dictionary";
+import { formatCount, interpolate } from "@/lib/i18n/message";
 import type { ReviewSummary } from "@/lib/reviewSummary";
 import { formatRiotId } from "@/lib/riotId";
+import { MAX_RATING } from "@/lib/validation";
 import { RankSummary } from "./RankSummary";
 import { RefreshButton } from "./RefreshButton";
 
@@ -17,6 +20,7 @@ type PlayerCardProps = {
   statsUpdatedAt: Date | null;
   isStatsStale: boolean;
   reviewSummary: ReviewSummary;
+  dictionary: Dictionary;
 };
 
 export function PlayerCard({
@@ -30,6 +34,7 @@ export function PlayerCard({
   statsUpdatedAt,
   isStatsStale,
   reviewSummary,
+  dictionary,
 }: PlayerCardProps) {
   return (
     <Card className="relative overflow-hidden p-5 sm:p-6">
@@ -48,7 +53,7 @@ export function PlayerCard({
           </div>
         </div>
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <ReviewSummaryBlock summary={reviewSummary} />
+          <ReviewSummaryBlock summary={reviewSummary} dictionary={dictionary} />
           <RankSummary
             tier={tier}
             rank={rank}
@@ -57,6 +62,7 @@ export function PlayerCard({
             losses={losses}
             updatedAt={statsUpdatedAt}
             isStale={isStatsStale}
+            dictionary={dictionary}
           />
         </div>
       </div>
@@ -64,33 +70,48 @@ export function PlayerCard({
   );
 }
 
-function ReviewSummaryBlock({ summary }: { summary: ReviewSummary }) {
+type ReviewSummaryBlockProps = {
+  summary: ReviewSummary;
+  dictionary: Dictionary;
+};
+
+function ReviewSummaryBlock({ summary, dictionary }: ReviewSummaryBlockProps) {
+  const { player, rating, reviewTags } = dictionary;
+
   if (summary.reviewCount === 0 || summary.averageRating === null) {
-    return (
-      <p className="text-sm text-text-mute">
-        Todavía nadie dejó una review. Sé la primera persona.
-      </p>
-    );
+    return <p className="text-sm text-text-mute">{player.noReviewsYet}</p>;
   }
 
-  const reviewLabel = summary.reviewCount === 1 ? "review" : "reviews";
+  const averageLabel = summary.averageRating.toFixed(1);
 
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-3">
-        <Stars rating={Math.round(summary.averageRating)} size="md" />
+        <Stars
+          rating={Math.round(summary.averageRating)}
+          size="md"
+          label={interpolate(rating.outOf, {
+            rating: averageLabel,
+            max: MAX_RATING,
+          })}
+        />
         <p className="font-mono text-sm">
-          <span className="text-star">{summary.averageRating.toFixed(1)}</span>
+          <span className="text-star">{averageLabel}</span>
           <span className="text-text-mute">
             {" "}
-            · {summary.reviewCount} {reviewLabel}
+            · {formatCount(summary.reviewCount, player.reviewCount)}
           </span>
         </p>
       </div>
       {summary.topTags.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {summary.topTags.map(({ tag, count }) => (
-            <TagBadge key={tag} tag={tag} count={count} />
+            <TagBadge
+              key={tag}
+              tag={tag}
+              label={reviewTags[tag]}
+              count={count}
+            />
           ))}
         </div>
       )}

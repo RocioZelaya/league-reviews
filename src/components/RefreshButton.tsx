@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useDictionary } from "@/components/i18n/LocaleProvider";
 import { Button } from "@/components/ui/Button";
 import { InlineError } from "@/components/ui/InlineError";
+import { readApiErrorCode } from "@/lib/apiErrors";
+import { apiErrorMessage } from "@/lib/i18n/apiErrorMessage";
 
 type RefreshButtonProps = {
   riotId: string;
@@ -11,6 +14,7 @@ type RefreshButtonProps = {
 
 export function RefreshButton({ riotId }: RefreshButtonProps) {
   const router = useRouter();
+  const dictionary = useDictionary();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,8 +27,10 @@ export function RefreshButton({ riotId }: RefreshButtonProps) {
         { method: "POST" },
       );
       if (!response.ok) {
-        const data = (await response.json()) as { error?: string };
-        setError(data.error ?? "No se pudo actualizar.");
+        const code = await readApiErrorCode(response);
+        setError(
+          apiErrorMessage(code, dictionary, dictionary.errors.refreshFailed),
+        );
         return;
       }
       router.refresh();
@@ -43,9 +49,13 @@ export function RefreshButton({ riotId }: RefreshButtonProps) {
         aria-busy={isRefreshing}
       >
         <RefreshIcon spinning={isRefreshing} />
-        {isRefreshing ? "Actualizando" : "Actualizar"}
+        {isRefreshing
+          ? dictionary.player.refreshing
+          : dictionary.player.refresh}
       </Button>
-      <InlineError message={error} />
+      <div className="max-w-56 text-right">
+        <InlineError message={error} />
+      </div>
     </div>
   );
 }

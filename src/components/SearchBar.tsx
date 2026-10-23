@@ -2,12 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useDictionary } from "@/components/i18n/LocaleProvider";
 import { Button } from "@/components/ui/Button";
 import { InlineError } from "@/components/ui/InlineError";
 
 const RIOT_ID_PATTERN = /^.+#.+$/;
-const INVALID_FORMAT_MESSAGE =
-  "Usá el formato Nombre#Tag, por ejemplo Faker#KR1.";
 
 type SearchBarProps = {
   compact?: boolean;
@@ -15,6 +14,7 @@ type SearchBarProps = {
 
 export function SearchBar({ compact = false }: SearchBarProps) {
   const router = useRouter();
+  const { search } = useDictionary();
   const [riotId, setRiotId] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -23,7 +23,7 @@ export function SearchBar({ compact = false }: SearchBarProps) {
     const trimmed = riotId.trim();
 
     if (!RIOT_ID_PATTERN.test(trimmed)) {
-      setError(INVALID_FORMAT_MESSAGE);
+      setError(search.invalidFormat);
       return;
     }
 
@@ -46,8 +46,8 @@ export function SearchBar({ compact = false }: SearchBarProps) {
             setRiotId(event.target.value);
             if (error) setError(null);
           }}
-          placeholder="Nombre#Tag"
-          aria-label="Riot ID"
+          placeholder={search.placeholder}
+          aria-label={search.inputLabel}
           autoComplete="off"
           spellCheck={false}
           className={`${inputHeight} min-w-0 flex-1 rounded-md border border-line-strong bg-ink px-4 font-mono text-text placeholder:text-text-mute focus:border-cyan focus:shadow-glow-cyan focus:outline-none`}
@@ -57,7 +57,7 @@ export function SearchBar({ compact = false }: SearchBarProps) {
           size={compact ? "sm" : "md"}
           className={compact ? "h-9" : "h-12 px-6"}
         >
-          Buscar
+          {search.submit}
         </Button>
       </div>
       {compact ? (

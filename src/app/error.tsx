@@ -1,12 +1,14 @@
 "use client";
 
+import { useDictionary } from "@/components/i18n/LocaleProvider";
 import { ErrorState } from "@/components/ui/ErrorState";
 
 export default function HomeError({ reset }: { reset: () => void }) {
+  const { errors } = useDictionary();
   return (
     <ErrorState
-      title="Algo salió mal"
-      description="No pudimos cargar la página. Probá de nuevo en un momento."
+      title={errors.genericTitle}
+      description={errors.genericDescription}
       onRetry={reset}
     />
   );

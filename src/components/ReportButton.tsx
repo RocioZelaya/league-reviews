@@ -2,6 +2,9 @@
 
 import { useRef, useState } from "react";
 import { getClientAnonId } from "@/lib/anon";
+import { readApiErrorCode } from "@/lib/apiErrors";
+import { apiErrorMessage } from "@/lib/i18n/apiErrorMessage";
+import { useDictionary } from "@/components/i18n/LocaleProvider";
 import { Button } from "@/components/ui/Button";
 import { InlineError } from "@/components/ui/InlineError";
 
@@ -11,11 +14,9 @@ type ReportButtonProps = {
 
 type ReportStatus = "idle" | "confirming" | "sending" | "sent";
 
-const REPORT_FAILED_MESSAGE = "No se pudo enviar el reporte.";
-const MISSING_SESSION_MESSAGE =
-  "No se pudo identificar tu sesión. Recargá la página.";
-
 export function ReportButton({ commentId }: ReportButtonProps) {
+  const dictionary = useDictionary();
+  const { comments, errors } = dictionary;
   const [status, setStatus] = useState<ReportStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -29,7 +30,7 @@ export function ReportButton({ commentId }: ReportButtonProps) {
   async function handleConfirm() {
     const anonId = getClientAnonId();
     if (!anonId) {
-      setError(MISSING_SESSION_MESSAGE);
+      setError(errors.sessionMissing);
       setStatus("idle");
       return;
     }
@@ -48,17 +49,21 @@ export function ReportButton({ commentId }: ReportButtonProps) {
         return;
       }
 
-      const data = (await response.json()) as { error?: string };
-      setError(data.error ?? REPORT_FAILED_MESSAGE);
+      const code = await readApiErrorCode(response);
+      setError(apiErrorMessage(code, dictionary, errors.reportFailed));
       setStatus("idle");
     } catch {
-      setError(REPORT_FAILED_MESSAGE);
+      setError(errors.reportFailed);
       setStatus("idle");
     }
   }
 
   if (status === "sent") {
-    return <span className="font-mono text-xs text-text-mute">Reportado</span>;
+    return (
+      <span className="font-mono text-xs text-text-mute">
+        {comments.reported}
+      </span>
+    );
   }
 
   if (status === "confirming" || status === "sending") {
@@ -66,9 +71,9 @@ export function ReportButton({ commentId }: ReportButtonProps) {
       <div
         className="flex items-center gap-2"
         role="group"
-        aria-label="Confirmar reporte"
+        aria-label={comments.reportConfirmGroup}
       >
-        <span className="text-xs text-text-dim">¿Reportar?</span>
+        <span className="text-xs text-text-dim">{comments.reportConfirm}</span>
         <Button
           size="sm"
           variant="secondary"
@@ -76,7 +81,7 @@ export function ReportButton({ commentId }: ReportButtonProps) {
           disabled={status === "sending"}
           className="h-7 border-magenta/50 text-magenta hover:border-magenta hover:text-magenta"
         >
-          Sí
+          {comments.yes}
         </Button>
         <Button
           size="sm"
@@ -86,7 +91,7 @@ export function ReportButton({ commentId }: ReportButtonProps) {
           autoFocus
           className="h-7"
         >
-          No
+          {comments.no}
         </Button>
       </div>
     );
@@ -100,7 +105,7 @@ export function ReportButton({ commentId }: ReportButtonProps) {
         onClick={() => setStatus("confirming")}
         className="font-mono text-xs text-text-mute transition-colors hover:text-magenta"
       >
-        Reportar
+        {comments.report}
       </button>
       <InlineError message={error} />
     </div>

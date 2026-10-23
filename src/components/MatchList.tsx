@@ -1,15 +1,15 @@
 import { EmptyState } from "@/components/ui/EmptyState";
 import { StaleNotice } from "@/components/ui/StaleNotice";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { MatchSummary } from "@/types";
 import { MatchItem } from "./MatchItem";
-
-const STALE_LABEL = "Partidas desactualizadas · Riot no respondió";
 
 type MatchListProps = {
   matches: MatchSummary[];
   dataDragonVersion: string;
   updatedAt: Date | null;
   isStale: boolean;
+  dictionary: Dictionary;
 };
 
 export function MatchList({
@@ -17,25 +17,29 @@ export function MatchList({
   dataDragonVersion,
   updatedAt,
   isStale,
+  dictionary,
 }: MatchListProps) {
   if (matches.length === 0) {
     return (
       <EmptyState
-        title="Sin partidas recientes."
-        description="Cuando juegue algo, aparece acá."
+        title={dictionary.player.noMatchesTitle}
+        description={dictionary.player.noMatchesDescription}
       />
     );
   }
 
   return (
     <div className="flex flex-col gap-2">
-      {isStale && <StaleNotice label={STALE_LABEL} updatedAt={updatedAt} />}
+      {isStale && (
+        <StaleNotice label={dictionary.match.outdated} updatedAt={updatedAt} />
+      )}
       <ul className="flex flex-col gap-2">
         {matches.map((match) => (
           <MatchItem
             key={match.matchId}
             match={match}
             dataDragonVersion={dataDragonVersion}
+            dictionary={dictionary}
           />
         ))}
       </ul>

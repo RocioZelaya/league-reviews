@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import { getClientAnonId } from "@/lib/anon";
+import { readApiErrorCode } from "@/lib/apiErrors";
+import { apiErrorMessage } from "@/lib/i18n/apiErrorMessage";
 import type { VoteValue } from "@/lib/validation";
+import { useDictionary } from "@/components/i18n/LocaleProvider";
 import { InlineError } from "@/components/ui/InlineError";
 
 type VoteButtonsProps = {
@@ -16,8 +19,6 @@ type VoteResponse = {
   score: number;
   vote: VoteValue | null;
 };
-
-const VOTE_FAILED_MESSAGE = "No se pudo registrar el voto.";
 
 /** Mirrors the endpoint: same value toggles off, a different one switches. */
 function applyVote(
@@ -37,6 +38,8 @@ export function VoteButtons({
   initialScore,
   initialVote = null,
 }: VoteButtonsProps) {
+  const dictionary = useDictionary();
+  const { comments, errors } = dictionary;
   const [score, setScore] = useState(initialScore);
   const [activeVote, setActiveVote] = useState<VoteValue | null>(initialVote);
   const [isVoting, setIsVoting] = useState(false);
@@ -63,8 +66,8 @@ export function VoteButtons({
       if (!response.ok) {
         setScore(previous.score);
         setActiveVote(previous.vote);
-        const data = (await response.json()) as { error?: string };
-        setError(data.error ?? VOTE_FAILED_MESSAGE);
+        const code = await readApiErrorCode(response);
+        setError(apiErrorMessage(code, dictionary, errors.voteFailed));
         return;
       }
 
@@ -74,7 +77,7 @@ export function VoteButtons({
     } catch {
       setScore(previous.score);
       setActiveVote(previous.vote);
-      setError(VOTE_FAILED_MESSAGE);
+      setError(errors.voteFailed);
     } finally {
       setIsVoting(false);
     }
@@ -84,7 +87,7 @@ export function VoteButtons({
     <div className="flex flex-col gap-1">
       <div className="flex items-center gap-1 rounded-full border border-line bg-void p-0.5">
         <VoteButton
-          label="Votar arriba"
+          label={comments.upvote}
           direction="up"
           isActive={activeVote === 1}
           onClick={() => handleVote(1)}
@@ -93,7 +96,7 @@ export function VoteButtons({
           {score}
         </span>
         <VoteButton
-          label="Votar abajo"
+          label={comments.downvote}
           direction="down"
           isActive={activeVote === -1}
           onClick={() => handleVote(-1)}

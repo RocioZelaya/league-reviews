@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { createCommentSchema } from "@/lib/validation";
 import { containsProfanity } from "@/lib/profanity";
+import { apiErrorResponse } from "@/lib/apiErrors";
 import { hashIp, getClientIp } from "@/lib/hash";
 import {
   checkRateLimit,
@@ -13,20 +14,14 @@ import {
 export async function POST(request: NextRequest) {
   const parsed = createCommentSchema.safeParse(await request.json());
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: "Datos de comentario inválidos." },
-      { status: 400 },
-    );
+    return apiErrorResponse("INVALID_INPUT");
   }
 
   const { riotAccountId, body, rating, tags, anonId, nickname } = parsed.data;
 
   if (containsProfanity(body)) {
     console.info("comment.create.rejected_profanity", { riotAccountId });
-    return NextResponse.json(
-      { error: "El comentario contiene lenguaje no permitido." },
-      { status: 400 },
-    );
+    return apiErrorResponse("PROFANITY");
   }
 
   const ipHash = hashIp(getClientIp(request));
@@ -40,10 +35,7 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     if (error instanceof RateLimitExceededError) {
-      return NextResponse.json(
-        { error: "Alcanzaste el límite de comentarios por hora." },
-        { status: 429 },
-      );
+      return apiErrorResponse("RATE_LIMITED");
     }
     throw error;
   }
