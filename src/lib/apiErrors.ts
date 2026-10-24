@@ -6,6 +6,8 @@ export const API_ERROR_CODES = [
   "RATE_LIMITED",
   "NOT_FOUND",
   "UPSTREAM_FAILED",
+  "SELF_REVIEW",
+  "NO_SHARED_MATCH",
 ] as const;
 
 export const apiErrorCodeSchema = z.enum(API_ERROR_CODES);
@@ -25,6 +27,8 @@ const API_ERROR_STATUS: Record<ApiErrorCode, number> = {
   RATE_LIMITED: HTTP_TOO_MANY_REQUESTS,
   NOT_FOUND: HTTP_NOT_FOUND,
   UPSTREAM_FAILED: HTTP_BAD_GATEWAY,
+  SELF_REVIEW: HTTP_BAD_REQUEST,
+  NO_SHARED_MATCH: HTTP_BAD_REQUEST,
 };
 
 /**

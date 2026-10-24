@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { useDictionary } from "@/components/i18n/LocaleProvider";
 import { Button } from "@/components/ui/Button";
 import { InlineError } from "@/components/ui/InlineError";
-
-const RIOT_ID_PATTERN = /^.+#.+$/;
+import { RIOT_ID_PATTERN } from "@/lib/riotId";
 
 type SearchBarProps = {
   compact?: boolean;

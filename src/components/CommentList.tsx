@@ -42,6 +42,7 @@ export function CommentList({ comments, dictionary }: CommentListProps) {
           score={comment.score}
           tags={comment.tags}
           createdAt={comment.createdAt}
+          verifiedMatchPlayedAt={comment.verifiedMatchPlayedAt}
           viewerVote={readViewerVote(comment.votes)}
           dictionary={dictionary}
         />

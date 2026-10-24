@@ -231,6 +231,8 @@ Casos borde:
 - [x] Rediseño con tema único oscuro ("Arcane neon"), primitivas de UI, emblemas e íconos de campeón.
 - [x] Idioma: inglés por default y toggle a español en el header, guardado en cookie `locale` (sin cambiar URLs). Diccionarios tipados en `src/lib/i18n/`.
 - [x] Errores de API por código estable (`src/lib/apiErrors.ts`) en vez de strings localizados.
+- [x] Región detectada por jugador (Account-V1 active shard); cualquier Riot ID funciona sin env de plataforma.
+- [x] Verificación opcional "jugaron juntos": Riot ID del reviewer, partida compartida en las últimas 20, badge y orden primero en el perfil.
 - [x] Si Riot falla con cache vencida, el perfil marca rank y partidas como desactualizados y el refresh manual devuelve `502 UPSTREAM_FAILED`.
 
 ## Fuera de alcance del MVP (§11)
@@ -241,6 +243,5 @@ Backlog post-MVP, **no** pendientes de este roadmap. El schema ya está diseñad
 - Leaderboard de toxicidad.
 - Compartir en redes sociales.
 - Karma de reviewer.
-- Validación "solo podés reviewear a alguien con quien jugaste".
 - Production API Key de Riot (la dev key alcanza para el MVP).
 - Migrar el rate limiting de Postgres a Redis/Upstash.

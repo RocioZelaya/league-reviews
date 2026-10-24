@@ -10,6 +10,7 @@ import {
 } from "@/lib/anon";
 import { readApiErrorCode } from "@/lib/apiErrors";
 import { apiErrorMessage } from "@/lib/i18n/apiErrorMessage";
+import { MAX_RIOT_ID_LENGTH } from "@/lib/riotId";
 import { MAX_COMMENT_LENGTH, MAX_NICKNAME_LENGTH } from "@/lib/validation";
 import { useDictionary } from "@/components/i18n/LocaleProvider";
 import { Button } from "@/components/ui/Button";
@@ -33,6 +34,7 @@ export function CommentForm({ riotAccountId }: CommentFormProps) {
   const [rating, setRating] = useState(0);
   const [tags, setTags] = useState<ReviewTag[]>([]);
   const [nickname, setNickname] = useState(() => getClientNickname() ?? "");
+  const [reviewerRiotId, setReviewerRiotId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -68,6 +70,7 @@ export function CommentForm({ riotAccountId }: CommentFormProps) {
           tags,
           anonId,
           nickname: trimmedNickname || undefined,
+          reviewerRiotId: reviewerRiotId.trim() || undefined,
         }),
       });
 
@@ -80,6 +83,7 @@ export function CommentForm({ riotAccountId }: CommentFormProps) {
       setBody("");
       setRating(0);
       setTags([]);
+      setReviewerRiotId("");
       router.refresh();
     } finally {
       setIsSubmitting(false);
@@ -118,18 +122,38 @@ export function CommentForm({ riotAccountId }: CommentFormProps) {
 
         <TagSelector selected={tags} onChange={setTags} />
 
-        <div className="flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
-          <input
-            type="text"
-            value={nickname}
-            onChange={(event) => setNickname(event.target.value)}
-            maxLength={MAX_NICKNAME_LENGTH}
-            placeholder={commentForm.nicknamePlaceholder}
-            aria-label={commentForm.nicknameLabel}
-            autoComplete="nickname"
-            className={`${FIELD_CLASSES} h-10 sm:max-w-56`}
-          />
+        <div className="flex flex-col gap-3 border-t border-line pt-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <input
+              type="text"
+              value={nickname}
+              onChange={(event) => setNickname(event.target.value)}
+              maxLength={MAX_NICKNAME_LENGTH}
+              placeholder={commentForm.nicknamePlaceholder}
+              aria-label={commentForm.nicknameLabel}
+              autoComplete="nickname"
+              className={`${FIELD_CLASSES} h-10`}
+            />
+            <div className="flex flex-col gap-1">
+              <input
+                type="text"
+                value={reviewerRiotId}
+                onChange={(event) => setReviewerRiotId(event.target.value)}
+                maxLength={MAX_RIOT_ID_LENGTH}
+                placeholder={commentForm.riotIdPlaceholder}
+                aria-label={commentForm.riotIdLabel}
+                aria-describedby="comment-riot-id-help"
+                autoComplete="off"
+                spellCheck={false}
+                className={`${FIELD_CLASSES} h-10 font-mono`}
+              />
+              <p id="comment-riot-id-help" className="text-xs text-text-mute">
+                {commentForm.riotIdHelp}
+              </p>
+            </div>
+          </div>
           <Button
+            className="self-end"
             type="submit"
             disabled={isSubmitting || body.trim().length === 0}
             aria-busy={isSubmitting}

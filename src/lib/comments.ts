@@ -17,7 +17,11 @@ export async function getCommentsForAccount(
         ? { where: { anonId: viewerAnonId }, select: { value: true } }
         : false,
     },
-    orderBy: { createdAt: "desc" },
+    // Verified reviews first (newest shared match on top), then the rest.
+    orderBy: [
+      { verifiedMatchPlayedAt: { sort: "desc", nulls: "last" } },
+      { createdAt: "desc" },
+    ],
   });
 }
 

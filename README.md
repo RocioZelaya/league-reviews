@@ -18,7 +18,9 @@ Sin login, sin cuentas: dejás tu review y listo.
 - **Anti-abuso** — identidad anónima por cookie y rate limiting por IP hasheada.
 - **Tema único oscuro** (“Arcane neon”): tokens en `src/app/globals.css`, primitivas en `src/components/ui`, sin modo claro.
 - **Inglés por default, español con un clic** — el ícono de idioma del header guarda una cookie `locale`; las URLs no cambian. Los textos viven en `src/lib/i18n/dictionaries/{en,es}.ts` (`en.ts` es la fuente de verdad tipada).
-- **Errores de API por código** — los route handlers devuelven `{ error: CODE }` (`INVALID_INPUT`, `PROFANITY`, `RATE_LIMITED`, `NOT_FOUND`, `UPSTREAM_FAILED`, ver `src/lib/apiErrors.ts`) y el cliente muestra el mensaje en el idioma activo.
+- **Errores de API por código** — los route handlers devuelven `{ error: CODE }` (`INVALID_INPUT`, `PROFANITY`, `RATE_LIMITED`, `NOT_FOUND`, `UPSTREAM_FAILED`, `SELF_REVIEW`, `NO_SHARED_MATCH`, ver `src/lib/apiErrors.ts`) y el cliente muestra el mensaje en el idioma activo.
+- **Reviews verificadas (opcional)** — si al publicar ingresás tu Riot ID y compartís una de las últimas 20 partidas del jugador, la review lleva el badge “Jugaron juntos” y aparece primera en el perfil. Tu Riot ID no se muestra: se guarda el puuid y la partida compartida.
+- **Cualquier región** — la plataforma de cada jugador se detecta sola vía Account-V1; no hay selector ni configuración.
 - **Datos desactualizados visibles** — si Riot no responde, el perfil sirve la cache y lo marca en el rank y en las partidas en vez de fallar.
 
 ### Tags disponibles

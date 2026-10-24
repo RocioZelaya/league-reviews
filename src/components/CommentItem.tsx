@@ -2,6 +2,7 @@ import type { CommentTag } from "@prisma/client";
 import { Stars } from "@/components/ui/Stars";
 import { TagBadge } from "@/components/ui/TagBadge";
 import { RelativeTime } from "@/components/ui/RelativeTime";
+import { VerifiedBadge } from "@/components/ui/VerifiedBadge";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import { interpolate } from "@/lib/i18n/message";
 import { MAX_RATING, type VoteValue } from "@/lib/validation";
@@ -16,6 +17,7 @@ type CommentItemProps = {
   score: number;
   tags: CommentTag[];
   createdAt: Date;
+  verifiedMatchPlayedAt: Date | null;
   viewerVote: VoteValue | null;
   dictionary: Dictionary;
 };
@@ -28,6 +30,7 @@ export function CommentItem({
   score,
   tags,
   createdAt,
+  verifiedMatchPlayedAt,
   viewerVote,
   dictionary,
 }: CommentItemProps) {
@@ -45,6 +48,14 @@ export function CommentItem({
           <p className="font-mono text-xs text-text-mute">
             <RelativeTime timestampMs={createdAt.getTime()} />
           </p>
+          {verifiedMatchPlayedAt && (
+            <div className="mt-1.5">
+              <VerifiedBadge
+                label={comments.verifiedBadge}
+                playedAt={verifiedMatchPlayedAt}
+              />
+            </div>
+          )}
         </div>
         <Stars
           rating={rating}

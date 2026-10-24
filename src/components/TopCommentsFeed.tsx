@@ -4,6 +4,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { RelativeTime } from "@/components/ui/RelativeTime";
 import { Stars } from "@/components/ui/Stars";
 import { TagBadge } from "@/components/ui/TagBadge";
+import { VerifiedBadge } from "@/components/ui/VerifiedBadge";
 import { formatTier } from "@/lib/format";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import { interpolate } from "@/lib/i18n/message";
@@ -77,6 +78,14 @@ export function TopCommentsFeed({
                     {" · "}
                     <RelativeTime timestampMs={comment.createdAt.getTime()} />
                   </p>
+                  {comment.verifiedMatchPlayedAt && (
+                    <div className="mt-1.5">
+                      <VerifiedBadge
+                        label={commentsCopy.verifiedBadge}
+                        playedAt={comment.verifiedMatchPlayedAt}
+                      />
+                    </div>
+                  )}
                 </div>
                 <Stars
                   rating={comment.rating}

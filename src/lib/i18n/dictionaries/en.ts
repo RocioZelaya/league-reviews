@@ -48,6 +48,9 @@ const apiErrors: Record<ApiErrorCode, string> = {
   RATE_LIMITED: "Too many requests. Try again in a bit.",
   NOT_FOUND: "That player does not exist.",
   UPSTREAM_FAILED: "Riot did not respond. Try again in a moment.",
+  SELF_REVIEW: "You cannot review your own account.",
+  NO_SHARED_MATCH:
+    "No recent match found with this player. Check your Riot ID, or leave it empty to publish without verification.",
 };
 
 export const en = {
@@ -140,6 +143,10 @@ export const en = {
     nicknamePlaceholder: "Your name (optional)",
     nicknameLabel: "Nickname",
     tagsLegend: "Tags",
+    riotIdLabel: "Your Riot ID",
+    riotIdPlaceholder: "Your Riot ID (optional)",
+    riotIdHelp:
+      "If you played a recent match with this player, your review gets a verified badge. Your Riot ID is never shown.",
     submit: "Publish review",
     submitting: "Publishing",
     missingRating: "Pick a rating from 1 to 5 stars.",
@@ -156,6 +163,7 @@ export const en = {
     yes: "Yes",
     no: "No",
     reported: "Reported",
+    verifiedBadge: "Played together",
   },
   errors: {
     eyebrow: "Error",

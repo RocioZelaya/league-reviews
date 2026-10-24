@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ReviewTag } from "@prisma/client";
+import { MAX_RIOT_ID_LENGTH, RIOT_ID_PATTERN } from "./riotId";
 
 export const MAX_COMMENT_LENGTH = 1000;
 export const MAX_TAGS_PER_COMMENT = 3;
@@ -14,6 +15,12 @@ export const createCommentSchema = z.object({
   tags: z.array(z.nativeEnum(ReviewTag)).max(MAX_TAGS_PER_COMMENT),
   anonId: z.string().uuid(),
   nickname: z.string().min(1).max(MAX_NICKNAME_LENGTH).optional(),
+  reviewerRiotId: z
+    .string()
+    .trim()
+    .max(MAX_RIOT_ID_LENGTH)
+    .regex(RIOT_ID_PATTERN)
+    .optional(),
 });
 
 export type CreateCommentInput = z.infer<typeof createCommentSchema>;

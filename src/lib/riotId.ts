@@ -1,4 +1,8 @@
 export const RIOT_ID_SEPARATOR = "#";
+// Riot allows 3-16 characters for the name and 3-5 for the tag, but legacy
+// accounts exist outside those bounds, so only the shape is enforced.
+export const RIOT_ID_PATTERN = /^[^#]{1,16}#[^#]{1,5}$/;
+export const MAX_RIOT_ID_LENGTH = 22;
 
 export type ParsedRiotId = {
   gameName: string;

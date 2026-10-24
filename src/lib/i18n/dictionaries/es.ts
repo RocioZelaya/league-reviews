@@ -50,6 +50,9 @@ const apiErrors: Record<ApiErrorCode, string> = {
   RATE_LIMITED: "Demasiados intentos. Probá de nuevo en un rato.",
   NOT_FOUND: "Ese jugador no existe.",
   UPSTREAM_FAILED: "Riot no respondió. Probá de nuevo en un momento.",
+  SELF_REVIEW: "No podés reseñar tu propia cuenta.",
+  NO_SHARED_MATCH:
+    "No encontramos una partida reciente con este jugador. Revisá tu Riot ID, o dejalo vacío para publicar sin verificar.",
 };
 
 export const es: Dictionary = {
@@ -142,6 +145,10 @@ export const es: Dictionary = {
     nicknamePlaceholder: "Tu nombre (opcional)",
     nicknameLabel: "Nickname",
     tagsLegend: "Tags",
+    riotIdLabel: "Tu Riot ID",
+    riotIdPlaceholder: "Tu Riot ID (opcional)",
+    riotIdHelp:
+      "Si jugaste una partida reciente con este jugador, tu review lleva un badge de verificada. Tu Riot ID nunca se muestra.",
     submit: "Publicar review",
     submitting: "Publicando",
     missingRating: "Elegí un rating de 1 a 5 estrellas.",
@@ -158,6 +165,7 @@ export const es: Dictionary = {
     yes: "Sí",
     no: "No",
     reported: "Reportado",
+    verifiedBadge: "Jugaron juntos",
   },
   errors: {
     eyebrow: "Error",
