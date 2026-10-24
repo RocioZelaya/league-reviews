@@ -1,15 +1,25 @@
-import { getAccountBaseUrl, getPlatformBaseUrl } from "./regions";
-import type {
-  AccountDto,
-  LeagueEntryDto,
-  MatchDto,
-  MatchSummary,
-  ResolvedRiotAccount,
+import type { z } from "zod";
+import {
+  getAccountBaseUrl,
+  getContinentalBaseUrl,
+  getPlatformBaseUrl,
+  type ContinentalRegion,
+  type Platform,
+} from "./regions";
+import {
+  accountDtoSchema,
+  activeShardDtoSchema,
+  leagueEntriesSchema,
+  matchDtoSchema,
+  matchIdsSchema,
+  type AccountDto,
+  type LeagueEntryDto,
+  type MatchDto,
 } from "./types";
 
 const REQUEST_TIMEOUT_MS = 8000;
 const RETRY_AFTER_FALLBACK_SECONDS = 2;
-const RECENT_MATCH_COUNT = 5;
+const SOLO_QUEUE_TYPE = "RANKED_SOLO_5x5";
 
 export class RiotNotFoundError extends Error {
   constructor(resource: string) {
@@ -28,6 +38,17 @@ export class RiotApiError extends Error {
   }
 }
 
+const AUTH_FAILURE_STATUSES = new Set([401, 403]);
+
+/** True when Riot rejected the API key itself (expired dev key, wrong key). */
+export function isRiotAuthFailure(error: unknown): boolean {
+  return (
+    error instanceof RiotApiError &&
+    error.status !== undefined &&
+    AUTH_FAILURE_STATUSES.has(error.status)
+  );
+}
+
 function readApiKey(): string {
   const apiKey = process.env.RIOT_API_KEY;
   if (!apiKey) {
@@ -36,7 +57,11 @@ function readApiKey(): string {
   return apiKey;
 }
 
-async function riotFetch<T>(url: string, hasRetried = false): Promise<T> {
+async function riotFetch<T>(
+  url: string,
+  schema: z.ZodType<T>,
+  hasRetried = false,
+): Promise<T> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
@@ -47,7 +72,10 @@ async function riotFetch<T>(url: string, hasRetried = false): Promise<T> {
       signal: controller.signal,
     });
   } catch (error) {
-    console.error("riot.request.network_error", { url, error });
+    console.warn("riot.request.network_error", {
+      url,
+      message: error instanceof Error ? error.message : String(error),
+    });
     throw new RiotApiError("Riot API network error");
   } finally {
     clearTimeout(timeout);
@@ -59,7 +87,7 @@ async function riotFetch<T>(url: string, hasRetried = false): Promise<T> {
 
   if (response.status === 429) {
     if (hasRetried) {
-      console.error("riot.request.rate_limited", { url });
+      console.warn("riot.request.rate_limited", { url });
       throw new RiotApiError("Riot API rate limit exceeded", 429);
     }
     const retryAfterSeconds = Number(
@@ -68,18 +96,25 @@ async function riotFetch<T>(url: string, hasRetried = false): Promise<T> {
     await new Promise((resolve) =>
       setTimeout(resolve, retryAfterSeconds * 1000),
     );
-    return riotFetch<T>(url, true);
+    return riotFetch(url, schema, true);
   }
 
   if (!response.ok) {
-    console.error("riot.request.failed", { url, status: response.status });
     throw new RiotApiError(
       `Riot API request failed with status ${response.status}`,
       response.status,
     );
   }
 
-  return (await response.json()) as T;
+  const parsed = schema.safeParse(await response.json());
+  if (!parsed.success) {
+    console.warn("riot.request.unexpected_payload", {
+      url,
+      issues: parsed.error.issues.length,
+    });
+    throw new RiotApiError("Riot API payload has unexpected shape");
+  }
+  return parsed.data;
 }
 
 export async function fetchAccountByRiotId(
@@ -87,78 +122,45 @@ export async function fetchAccountByRiotId(
   tagLine: string,
 ): Promise<AccountDto> {
   const url = `${getAccountBaseUrl()}/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`;
-  return riotFetch<AccountDto>(url);
+  return riotFetch(url, accountDtoSchema);
+}
+
+/** The platform where this account plays League, or null if it has no League account. */
+export async function fetchActiveLolPlatform(
+  puuid: string,
+): Promise<Platform | null> {
+  const url = `${getAccountBaseUrl()}/riot/account/v1/region/by-game/lol/by-puuid/${puuid}`;
+  try {
+    const shard = await riotFetch(url, activeShardDtoSchema);
+    return shard.region;
+  } catch (error) {
+    if (error instanceof RiotNotFoundError) return null;
+    throw error;
+  }
 }
 
 export async function fetchSoloQueueEntry(
   puuid: string,
+  platform: Platform,
 ): Promise<LeagueEntryDto | null> {
-  const url = `${getPlatformBaseUrl()}/lol/league/v4/entries/by-puuid/${puuid}`;
-  const entries = await riotFetch<LeagueEntryDto[]>(url);
-  return entries.find((entry) => entry.queueType === "RANKED_SOLO_5x5") ?? null;
+  const url = `${getPlatformBaseUrl(platform)}/lol/league/v4/entries/by-puuid/${puuid}`;
+  const entries = await riotFetch(url, leagueEntriesSchema);
+  return entries.find((entry) => entry.queueType === SOLO_QUEUE_TYPE) ?? null;
 }
 
 export async function fetchRecentMatchIds(
   puuid: string,
+  region: ContinentalRegion,
   count: number,
 ): Promise<string[]> {
-  const url = `${getAccountBaseUrl()}/lol/match/v5/matches/by-puuid/${puuid}/ids?count=${count}`;
-  return riotFetch<string[]>(url);
+  const url = `${getContinentalBaseUrl(region)}/lol/match/v5/matches/by-puuid/${puuid}/ids?count=${count}`;
+  return riotFetch(url, matchIdsSchema);
 }
 
-export async function fetchMatch(matchId: string): Promise<MatchDto> {
-  const url = `${getAccountBaseUrl()}/lol/match/v5/matches/${matchId}`;
-  return riotFetch<MatchDto>(url);
-}
-
-function toMatchSummary(match: MatchDto, puuid: string): MatchSummary {
-  const participant = match.info.participants.find((p) => p.puuid === puuid);
-  if (!participant) {
-    throw new RiotApiError(
-      `Participant ${puuid} not found in match ${match.metadata.matchId}`,
-    );
-  }
-  return {
-    matchId: match.metadata.matchId,
-    championName: participant.championName,
-    kills: participant.kills,
-    deaths: participant.deaths,
-    assists: participant.assists,
-    win: participant.win,
-    durationSeconds: match.info.gameDuration,
-    playedAt: match.info.gameEndTimestamp,
-    role: participant.teamPosition,
-  };
-}
-
-export async function resolveRiotAccount(
-  gameName: string,
-  tagLine: string,
-): Promise<ResolvedRiotAccount> {
-  const account = await fetchAccountByRiotId(gameName, tagLine);
-
-  const [soloQueueEntry, matchIds] = await Promise.all([
-    fetchSoloQueueEntry(account.puuid),
-    fetchRecentMatchIds(account.puuid, RECENT_MATCH_COUNT),
-  ]);
-
-  const matches = await Promise.all(
-    matchIds.map((matchId) => fetchMatch(matchId)),
-  );
-
-  return {
-    puuid: account.puuid,
-    gameName: account.gameName,
-    tagLine: account.tagLine,
-    soloQueueRank: soloQueueEntry
-      ? {
-          tier: soloQueueEntry.tier,
-          rank: soloQueueEntry.rank,
-          leaguePoints: soloQueueEntry.leaguePoints,
-          wins: soloQueueEntry.wins,
-          losses: soloQueueEntry.losses,
-        }
-      : null,
-    matches: matches.map((match) => toMatchSummary(match, account.puuid)),
-  };
+export async function fetchMatch(
+  matchId: string,
+  region: ContinentalRegion,
+): Promise<MatchDto> {
+  const url = `${getContinentalBaseUrl(region)}/lol/match/v5/matches/${matchId}`;
+  return riotFetch(url, matchDtoSchema);
 }

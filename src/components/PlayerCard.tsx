@@ -1,18 +1,120 @@
+import { Card } from "@/components/ui/Card";
+import { Stars } from "@/components/ui/Stars";
+import { TagBadge } from "@/components/ui/TagBadge";
+import type { Dictionary } from "@/lib/i18n/dictionary";
+import { formatCount, interpolate } from "@/lib/i18n/message";
+import type { ReviewSummary } from "@/lib/reviewSummary";
+import { formatRiotId } from "@/lib/riotId";
+import { MAX_RATING } from "@/lib/validation";
+import { RankSummary } from "./RankSummary";
 import { RefreshButton } from "./RefreshButton";
 
 type PlayerCardProps = {
   gameName: string;
   tagLine: string;
+  tier: string | null;
+  rank: string | null;
+  leaguePoints: number | null;
+  wins: number | null;
+  losses: number | null;
+  statsUpdatedAt: Date | null;
+  isStatsStale: boolean;
+  reviewSummary: ReviewSummary;
+  dictionary: Dictionary;
 };
 
-export function PlayerCard({ gameName, tagLine }: PlayerCardProps) {
+export function PlayerCard({
+  gameName,
+  tagLine,
+  tier,
+  rank,
+  leaguePoints,
+  wins,
+  losses,
+  statsUpdatedAt,
+  isStatsStale,
+  reviewSummary,
+  dictionary,
+}: PlayerCardProps) {
   return (
-    <div className="flex items-center justify-between rounded-lg border border-neutral-200 p-4 sm:p-6">
-      <h1 className="text-xl font-semibold sm:text-2xl">
-        {gameName}
-        <span className="text-neutral-500">#{tagLine}</span>
-      </h1>
-      <RefreshButton riotId={`${gameName}#${tagLine}`} />
+    <Card className="relative overflow-hidden p-5 sm:p-6">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-24 -right-24 size-64 rounded-full bg-magenta/10 blur-3xl"
+      />
+      <div className="relative flex flex-col gap-6">
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="min-w-0 font-display text-2xl font-bold tracking-tight break-words sm:text-4xl">
+            {gameName}
+            <span className="text-text-mute">#{tagLine}</span>
+          </h1>
+          <div className="shrink-0">
+            <RefreshButton riotId={formatRiotId(gameName, tagLine)} />
+          </div>
+        </div>
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <ReviewSummaryBlock summary={reviewSummary} dictionary={dictionary} />
+          <RankSummary
+            tier={tier}
+            rank={rank}
+            leaguePoints={leaguePoints}
+            wins={wins}
+            losses={losses}
+            updatedAt={statsUpdatedAt}
+            isStale={isStatsStale}
+            dictionary={dictionary}
+          />
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+type ReviewSummaryBlockProps = {
+  summary: ReviewSummary;
+  dictionary: Dictionary;
+};
+
+function ReviewSummaryBlock({ summary, dictionary }: ReviewSummaryBlockProps) {
+  const { player, rating, reviewTags } = dictionary;
+
+  if (summary.reviewCount === 0 || summary.averageRating === null) {
+    return <p className="text-sm text-text-mute">{player.noReviewsYet}</p>;
+  }
+
+  const averageLabel = summary.averageRating.toFixed(1);
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-3">
+        <Stars
+          rating={Math.round(summary.averageRating)}
+          size="md"
+          label={interpolate(rating.outOf, {
+            rating: averageLabel,
+            max: MAX_RATING,
+          })}
+        />
+        <p className="font-mono text-sm">
+          <span className="text-star">{averageLabel}</span>
+          <span className="text-text-mute">
+            {" "}
+            · {formatCount(summary.reviewCount, player.reviewCount)}
+          </span>
+        </p>
+      </div>
+      {summary.topTags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {summary.topTags.map(({ tag, count }) => (
+            <TagBadge
+              key={tag}
+              tag={tag}
+              label={reviewTags[tag]}
+              count={count}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

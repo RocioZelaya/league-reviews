@@ -2,6 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useDictionary } from "@/components/i18n/LocaleProvider";
+import { Button } from "@/components/ui/Button";
+import { InlineError } from "@/components/ui/InlineError";
+import { readApiErrorCode } from "@/lib/apiErrors";
+import { apiErrorMessage } from "@/lib/i18n/apiErrorMessage";
 
 type RefreshButtonProps = {
   riotId: string;
@@ -9,6 +14,7 @@ type RefreshButtonProps = {
 
 export function RefreshButton({ riotId }: RefreshButtonProps) {
   const router = useRouter();
+  const dictionary = useDictionary();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,8 +27,10 @@ export function RefreshButton({ riotId }: RefreshButtonProps) {
         { method: "POST" },
       );
       if (!response.ok) {
-        const data = (await response.json()) as { error?: string };
-        setError(data.error ?? "No se pudo actualizar.");
+        const code = await readApiErrorCode(response);
+        setError(
+          apiErrorMessage(code, dictionary, dictionary.errors.refreshFailed),
+        );
         return;
       }
       router.refresh();
@@ -33,15 +41,39 @@ export function RefreshButton({ riotId }: RefreshButtonProps) {
 
   return (
     <div className="flex flex-col items-end gap-1">
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={handleRefresh}
         disabled={isRefreshing}
-        className="text-sm text-neutral-500 underline disabled:opacity-50"
+        aria-busy={isRefreshing}
       >
-        {isRefreshing ? "Actualizando..." : "Actualizar datos"}
-      </button>
-      {error && <p className="text-xs text-red-600">{error}</p>}
+        <RefreshIcon spinning={isRefreshing} />
+        {isRefreshing
+          ? dictionary.player.refreshing
+          : dictionary.player.refresh}
+      </Button>
+      <div className="max-w-56 text-right">
+        <InlineError message={error} />
+      </div>
     </div>
+  );
+}
+
+function RefreshIcon({ spinning }: { spinning: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={`size-4 ${spinning ? "animate-spin" : ""}`}
+    >
+      <path d="M21 12a9 9 0 1 1-2.6-6.4" />
+      <path d="M21 3v6h-6" />
+    </svg>
   );
 }

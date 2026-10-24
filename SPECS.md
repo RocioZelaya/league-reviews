@@ -4,7 +4,7 @@
 
 Web para buscar jugadores de League of Legends por Riot ID (`Nombre#Tag`), ver su perfil (últimas 5 partidas + stats generales vía Riot API oficial) y dejar/leer reviews de texto libre con rating, tags, y voto arriba/abajo. La home destaca los comentarios mejor valorados de toda la plataforma, linkeando al perfil correspondiente. Sin login: moderación vía identidad anónima por cookie + rate limiting por IP + reportes.
 
-Fuera de alcance (documentado, no implementado en el MVP): login/RSO de Riot, leaderboard de toxicidad, compartir en redes, karma de reviewer, "solo podés reviewear si jugaste con esa persona". El schema está diseñado para no bloquear agregarlas después (ver §10).
+Fuera de alcance (documentado, no implementado en el MVP): login/RSO de Riot, leaderboard de toxicidad, compartir en redes, karma de reviewer. La verificación "jugaste con esa persona" existe como badge opcional (§8). El schema está diseñado para no bloquear agregarlas después (ver §10).
 
 ## 2. Stack
 
@@ -20,7 +20,7 @@ Fuera de alcance (documentado, no implementado en el MVP): login/RSO de Riot, le
 - Cuenta developer en https://developer.riotgames.com/ → **Development API Key** (expira cada 24h, se regenera manualmente en desarrollo; Production Key queda fuera del MVP).
 - Cuenta en **Neon** (Postgres serverless) — connection string pooled (`DATABASE_URL`) y directa (`DIRECT_URL`, requerida por Neon para `prisma migrate`).
 - Cuenta en **Vercel** para deploy.
-- Región Riot inicial: **EUW1 / europe** (configurable por env var, no hardcodeada). Account-V1 usa regiones continentales (americas/europe/asia/sea); Match-V5 y League-V4 usan platform routing (na1, euw1, etc).
+- Región: **detectada por jugador**. Account-V1 es global y `GET /riot/account/v1/region/by-game/lol/by-puuid/{puuid}` devuelve la plataforma activa (`la2`, `euw1`, `kr`…); League-V4 usa esa plataforma y Match-V5 su continente (`src/lib/riot/regions.ts`). `RIOT_ACCOUNT_REGION` solo elige el host continental para las llamadas globales (default `americas`).
 
 ## 4. Estructura de carpetas
 
@@ -203,7 +203,7 @@ Notas:
 
 ## 7. Integración y cache de Riot API
 
-- `resolveRiotAccount(gameName, tagLine)`: Account-V1 (`/riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}`) → `puuid`; League-V4 (`/lol/league/v4/entries/by-puuid/{puuid}`) → rank; Match-V5 (`/lol/match/v5/matches/by-puuid/{puuid}/ids?count=5` + `GET .../matches/{matchId}` x5) → últimas partidas.
+- Primera visita de un jugador (`getPlayerData`): Account-V1 (`/riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}`) → `puuid`; Account-V1 (`/riot/account/v1/region/by-game/lol/by-puuid/{puuid}`) → plataforma activa (404 = no juega LoL → 404 propio); League-V4 (`/lol/league/v4/entries/by-puuid/{puuid}`) → rank; Match-V5 (`/lol/match/v5/matches/by-puuid/{puuid}/ids?count=5` + `GET .../matches/{matchId}` x5) → últimas partidas. Todas las respuestas se validan con zod (`src/lib/riot/types.ts`).
 - Cache-first en `RiotAccount` con TTL diferenciado:
   - puuid: prácticamente inmutable, no vence.
   - rank/stats (`statsUpdatedAt`): **15 min**.
@@ -214,12 +214,15 @@ Notas:
 
 ## 8. API de mutaciones
 
-- **`POST /api/comments`** — body `{ riotAccountId, body, rating, tags[], anonId, nickname? }`:
+Todas las respuestas de error son `{ error: CODE }` con un código estable definido en `src/lib/apiErrors.ts` (`INVALID_INPUT` 400, `PROFANITY` 400, `RATE_LIMITED` 429, `NOT_FOUND` 404, `UPSTREAM_FAILED` 502, `SELF_REVIEW` 400, `NO_SHARED_MATCH` 400). El texto que ve el usuario lo elige el cliente según el idioma activo; la API nunca devuelve copy.
+
+- **`POST /api/comments`** — body `{ riotAccountId, body, rating, tags[], anonId, nickname?, reviewerRiotId? }`:
   1. Validar con zod (texto 1-1000 chars, rating entero 1-5, tags del enum, máx 3 tags).
-  2. `containsProfanity(body)` → si true, rechazar con mensaje claro (no censura silenciosa).
+  2. `containsProfanity(body)` → si true, rechazar con `PROFANITY` (no censura silenciosa).
   3. `checkRateLimit` por IP hasheada (5/hora).
-  4. Crear `Comment` + `CommentTag[]` en transacción.
-  5. `revalidatePath` de la página del jugador y de home.
+  4. Si viene `reviewerRiotId` (opcional): resolver su `puuid` (Account-V1, o la fila cacheada), rechazar `SELF_REVIEW` si coincide con el jugador, y buscar una partida compartida entre las últimas 20 de cada uno en el continente del jugador (`src/lib/riot/verification.ts`); sin coincidencia → `NO_SHARED_MATCH`. Se guarda `reviewerPuuid`, `verifiedMatchId` y `verifiedMatchPlayedAt`. El rate limit se aplica antes, así probar Riot IDs cuesta lo mismo que publicar.
+  5. Crear `Comment` + `CommentTag[]` en transacción.
+  6. `revalidatePath` de la página del jugador y de home. En el perfil las reviews verificadas van primero (`verifiedMatchPlayedAt desc nulls last`, luego `createdAt desc`).
 - **`POST /api/comments/[id]/vote`** — body `{ anonId, value: 1 | -1 }`:
   1. Rate limit 30/hora por IP.
   2. Upsert en `Vote` respetando `@@unique([commentId, anonId])`: mismo valor → no-op/toggle a quitar voto; valor distinto → actualiza.
@@ -244,15 +247,14 @@ Notas:
 DATABASE_URL=
 DIRECT_URL=
 RIOT_API_KEY=
-RIOT_ACCOUNT_REGION=europe
-RIOT_PLATFORM_REGION=euw1
+RIOT_ACCOUNT_REGION=americas
 RATE_LIMIT_SALT=
 NEXT_PUBLIC_SITE_URL=
 ```
 
 ## 11. Fuera de alcance del MVP (futuro)
 
-Login/RSO de Riot, leaderboard de toxicidad, compartir en redes, karma de reviewer, validación "solo podés reviewear si jugaste con esa persona". El desacople de `anonId` respecto de cualquier tabla de usuarios permite agregar una tabla `User` opcional + FK nullable en `Comment` más adelante sin romper el schema actual.
+Login/RSO de Riot, leaderboard de toxicidad, compartir en redes, karma de reviewer. El desacople de `anonId` respecto de cualquier tabla de usuarios permite agregar una tabla `User` opcional + FK nullable en `Comment` más adelante sin romper el schema actual.
 
 ## 12. Plan de implementación (orden sugerido)
 

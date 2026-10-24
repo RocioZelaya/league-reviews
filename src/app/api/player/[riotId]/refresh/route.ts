@@ -1,6 +1,9 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest } from "next/server";
 import { revalidatePath } from "next/cache";
 import { getPlayerData } from "@/lib/riot/cache";
+import { RiotApiError, RiotNotFoundError } from "@/lib/riot/client";
+import { parseRiotId } from "@/lib/riotId";
+import { apiErrorResponse } from "@/lib/apiErrors";
 import { hashIp, getClientIp } from "@/lib/hash";
 import {
   checkRateLimit,
@@ -14,13 +17,10 @@ type RouteContext = {
 
 export async function POST(request: NextRequest, context: RouteContext) {
   const { riotId } = await context.params;
-  const decoded = decodeURIComponent(riotId);
-  const separatorIndex = decoded.indexOf("#");
-  const gameName = decoded.slice(0, separatorIndex);
-  const tagLine = decoded.slice(separatorIndex + 1);
+  const { gameName, tagLine } = parseRiotId(decodeURIComponent(riotId));
 
   if (!gameName || !tagLine) {
-    return NextResponse.json({ error: "Riot ID inválido." }, { status: 400 });
+    return apiErrorResponse("INVALID_INPUT");
   }
 
   const ipHash = hashIp(getClientIp(request));
@@ -34,16 +34,29 @@ export async function POST(request: NextRequest, context: RouteContext) {
     );
   } catch (error) {
     if (error instanceof RateLimitExceededError) {
-      return NextResponse.json(
-        { error: "Esperá antes de volver a actualizar este perfil." },
-        { status: 429 },
-      );
+      return apiErrorResponse("RATE_LIMITED");
     }
     throw error;
   }
 
-  await getPlayerData(gameName, tagLine, true);
+  try {
+    const { stale } = await getPlayerData(gameName, tagLine, true);
+    // A forced refresh that could not update anything is a failure for the
+    // caller even though the cached profile still renders.
+    if (stale.stats && stale.matches) {
+      return apiErrorResponse("UPSTREAM_FAILED");
+    }
+  } catch (error) {
+    if (error instanceof RiotNotFoundError) {
+      return apiErrorResponse("NOT_FOUND");
+    }
+    if (error instanceof RiotApiError) {
+      return apiErrorResponse("UPSTREAM_FAILED");
+    }
+    throw error;
+  }
+
   revalidatePath(`/player/${riotId}`);
 
-  return NextResponse.json({ ok: true });
+  return Response.json({ ok: true });
 }

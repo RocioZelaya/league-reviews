@@ -1,31 +1,56 @@
+import { ChampionIcon } from "@/components/ui/ChampionIcon";
+import { EmptyState } from "@/components/ui/EmptyState";
+import type { Dictionary } from "@/lib/i18n/dictionary";
+import { formatCount } from "@/lib/i18n/message";
 import type { ChampionStat } from "@/types";
 
 type ChampionStatsGridProps = {
   championStats: ChampionStat[];
+  dataDragonVersion: string;
+  dictionary: Dictionary;
 };
 
-export function ChampionStatsGrid({ championStats }: ChampionStatsGridProps) {
+const WINRATE_HIGHLIGHT_THRESHOLD = 50;
+const CHAMPION_ICON_SIZE = 36;
+
+export function ChampionStatsGrid({
+  championStats,
+  dataDragonVersion,
+  dictionary,
+}: ChampionStatsGridProps) {
   if (championStats.length === 0) {
-    return (
-      <div className="rounded-lg border border-neutral-200 p-4 text-neutral-500 sm:p-6">
-        Sin campeones jugados recientemente.
-      </div>
-    );
+    return <EmptyState title={dictionary.player.noChampions} />;
   }
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+    <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
       {championStats.map((stat) => (
-        <div
+        <li
           key={stat.championName}
-          className="rounded-lg border border-neutral-200 p-3"
+          className="flex items-center gap-3 rounded-xl border border-line bg-ink p-3"
         >
-          <p className="font-medium">{stat.championName}</p>
-          <p className="text-sm text-neutral-500">
-            {stat.games} partidas · {stat.winrate}% WR
-          </p>
-        </div>
+          <ChampionIcon
+            championName={stat.championName}
+            version={dataDragonVersion}
+            size={CHAMPION_ICON_SIZE}
+          />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium">{stat.championName}</p>
+            <p className="font-mono text-xs text-text-mute">
+              {formatCount(stat.games, dictionary.match.games)} ·{" "}
+              <span
+                className={
+                  stat.winrate >= WINRATE_HIGHLIGHT_THRESHOLD
+                    ? "text-cyan"
+                    : "text-magenta"
+                }
+              >
+                {stat.winrate}%
+              </span>
+            </p>
+          </div>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }

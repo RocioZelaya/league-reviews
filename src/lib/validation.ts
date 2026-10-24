@@ -1,23 +1,37 @@
 import { z } from "zod";
 import { ReviewTag } from "@prisma/client";
+import { MAX_RIOT_ID_LENGTH, RIOT_ID_PATTERN } from "./riotId";
 
 export const MAX_COMMENT_LENGTH = 1000;
 export const MAX_TAGS_PER_COMMENT = 3;
+export const MAX_NICKNAME_LENGTH = 50;
+export const MIN_RATING = 1;
+export const MAX_RATING = 5;
 
 export const createCommentSchema = z.object({
   riotAccountId: z.string().min(1),
   body: z.string().min(1).max(MAX_COMMENT_LENGTH),
-  rating: z.number().int().min(1).max(5),
+  rating: z.number().int().min(MIN_RATING).max(MAX_RATING),
   tags: z.array(z.nativeEnum(ReviewTag)).max(MAX_TAGS_PER_COMMENT),
   anonId: z.string().uuid(),
-  nickname: z.string().min(1).max(50).optional(),
+  nickname: z.string().min(1).max(MAX_NICKNAME_LENGTH).optional(),
+  reviewerRiotId: z
+    .string()
+    .trim()
+    .max(MAX_RIOT_ID_LENGTH)
+    .regex(RIOT_ID_PATTERN)
+    .optional(),
 });
 
 export type CreateCommentInput = z.infer<typeof createCommentSchema>;
 
+export const voteValueSchema = z.union([z.literal(1), z.literal(-1)]);
+
+export type VoteValue = z.infer<typeof voteValueSchema>;
+
 export const voteSchema = z.object({
   anonId: z.string().uuid(),
-  value: z.union([z.literal(1), z.literal(-1)]),
+  value: voteValueSchema,
 });
 
 export type VoteInput = z.infer<typeof voteSchema>;

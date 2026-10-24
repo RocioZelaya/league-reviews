@@ -47,6 +47,12 @@ model Comment {
   nickname String? // opcional
   ipHash   String // sha256(ip + salt), nunca IP en claro
 
+  // Verificación opcional "jugaron juntos": puuid del autor y la partida
+  // reciente que comparte con el jugador reseñado. Nunca se muestra el puuid.
+  reviewerPuuid         String?
+  verifiedMatchId       String?
+  verifiedMatchPlayedAt DateTime?
+
   upvotes   Int @default(0)
   downvotes Int @default(0)
   score     Int @default(0) // upvotes - downvotes, desnormalizado e indexado

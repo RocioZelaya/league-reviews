@@ -2,15 +2,25 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ReviewTag } from "@prisma/client";
+import type { ReviewTag } from "@prisma/client";
 import {
   getClientAnonId,
   getClientNickname,
   setClientNickname,
 } from "@/lib/anon";
-import { MAX_COMMENT_LENGTH } from "@/lib/validation";
+import { readApiErrorCode } from "@/lib/apiErrors";
+import { apiErrorMessage } from "@/lib/i18n/apiErrorMessage";
+import { MAX_RIOT_ID_LENGTH } from "@/lib/riotId";
+import { MAX_COMMENT_LENGTH, MAX_NICKNAME_LENGTH } from "@/lib/validation";
+import { useDictionary } from "@/components/i18n/LocaleProvider";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { InlineError } from "@/components/ui/InlineError";
 import { StarRating } from "./StarRating";
 import { TagSelector } from "./TagSelector";
+
+const FIELD_CLASSES =
+  "rounded-md border border-line-strong bg-void px-3 py-2 text-text placeholder:text-text-mute focus:border-cyan focus:shadow-glow-cyan focus:outline-none";
 
 type CommentFormProps = {
   riotAccountId: string;
@@ -18,10 +28,13 @@ type CommentFormProps = {
 
 export function CommentForm({ riotAccountId }: CommentFormProps) {
   const router = useRouter();
+  const dictionary = useDictionary();
+  const { commentForm, rating: ratingCopy, errors } = dictionary;
   const [body, setBody] = useState("");
   const [rating, setRating] = useState(0);
   const [tags, setTags] = useState<ReviewTag[]>([]);
   const [nickname, setNickname] = useState(() => getClientNickname() ?? "");
+  const [reviewerRiotId, setReviewerRiotId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -30,13 +43,13 @@ export function CommentForm({ riotAccountId }: CommentFormProps) {
     setError(null);
 
     if (rating === 0) {
-      setError("Elegí un rating de 1 a 5 estrellas.");
+      setError(commentForm.missingRating);
       return;
     }
 
     const anonId = getClientAnonId();
     if (!anonId) {
-      setError("No se pudo identificar tu sesión. Recargá la página.");
+      setError(errors.sessionMissing);
       return;
     }
 
@@ -57,18 +70,20 @@ export function CommentForm({ riotAccountId }: CommentFormProps) {
           tags,
           anonId,
           nickname: trimmedNickname || undefined,
+          reviewerRiotId: reviewerRiotId.trim() || undefined,
         }),
       });
 
       if (!response.ok) {
-        const data = (await response.json()) as { error?: string };
-        setError(data.error ?? "No se pudo publicar el comentario.");
+        const code = await readApiErrorCode(response);
+        setError(apiErrorMessage(code, dictionary, errors.publishFailed));
         return;
       }
 
       setBody("");
       setRating(0);
       setTags([]);
+      setReviewerRiotId("");
       router.refresh();
     } finally {
       setIsSubmitting(false);
@@ -76,34 +91,78 @@ export function CommentForm({ riotAccountId }: CommentFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-      <input
-        type="text"
-        value={nickname}
-        onChange={(event) => setNickname(event.target.value)}
-        maxLength={50}
-        placeholder="Tu nombre (opcional)"
-        aria-label="Nickname"
-        className="rounded-lg border border-neutral-300 px-3 py-2"
-      />
-      <StarRating value={rating} onChange={setRating} />
-      <textarea
-        value={body}
-        onChange={(event) => setBody(event.target.value)}
-        maxLength={MAX_COMMENT_LENGTH}
-        placeholder="Contá cómo es jugar con esta persona..."
-        aria-label="Comentario"
-        className="min-h-24 rounded-lg border border-neutral-300 p-3"
-      />
-      <TagSelector selected={tags} onChange={setTags} />
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <button
-        type="submit"
-        disabled={isSubmitting || body.trim().length === 0}
-        className="self-start rounded-lg bg-black px-4 py-2 text-white disabled:opacity-50"
-      >
-        Publicar review
-      </button>
-    </form>
+    <Card raised className="p-4 sm:p-5">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1.5">
+          <p id="comment-rating-label" className="text-sm text-text-dim">
+            {ratingCopy.prompt}
+          </p>
+          <StarRating
+            value={rating}
+            onChange={setRating}
+            labelledBy="comment-rating-label"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <textarea
+            id="comment-body"
+            value={body}
+            onChange={(event) => setBody(event.target.value)}
+            maxLength={MAX_COMMENT_LENGTH}
+            placeholder={commentForm.bodyPlaceholder}
+            aria-label={commentForm.bodyLabel}
+            rows={4}
+            className={`${FIELD_CLASSES} resize-y`}
+          />
+          <p className="self-end font-mono text-xs text-text-mute">
+            {body.length}/{MAX_COMMENT_LENGTH}
+          </p>
+        </div>
+
+        <TagSelector selected={tags} onChange={setTags} />
+
+        <div className="flex flex-col gap-3 border-t border-line pt-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <input
+              type="text"
+              value={nickname}
+              onChange={(event) => setNickname(event.target.value)}
+              maxLength={MAX_NICKNAME_LENGTH}
+              placeholder={commentForm.nicknamePlaceholder}
+              aria-label={commentForm.nicknameLabel}
+              autoComplete="nickname"
+              className={`${FIELD_CLASSES} h-10`}
+            />
+            <div className="flex flex-col gap-1">
+              <input
+                type="text"
+                value={reviewerRiotId}
+                onChange={(event) => setReviewerRiotId(event.target.value)}
+                maxLength={MAX_RIOT_ID_LENGTH}
+                placeholder={commentForm.riotIdPlaceholder}
+                aria-label={commentForm.riotIdLabel}
+                aria-describedby="comment-riot-id-help"
+                autoComplete="off"
+                spellCheck={false}
+                className={`${FIELD_CLASSES} h-10 font-mono`}
+              />
+              <p id="comment-riot-id-help" className="text-xs text-text-mute">
+                {commentForm.riotIdHelp}
+              </p>
+            </div>
+          </div>
+          <Button
+            className="self-end"
+            type="submit"
+            disabled={isSubmitting || body.trim().length === 0}
+            aria-busy={isSubmitting}
+          >
+            {isSubmitting ? commentForm.submitting : commentForm.submit}
+          </Button>
+        </div>
+        <InlineError message={error} />
+      </form>
+    </Card>
   );
 }

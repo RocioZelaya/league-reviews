@@ -12,9 +12,16 @@ Sin login, sin cuentas: dejás tu review y listo.
 - **Perfil del jugador** — rank de soloQ (tier, división, LP, wins/losses), campeones más jugados con winrate, y las últimas 5 partidas. Todo desde la API oficial de Riot.
 - **Reviews** — texto libre (1-1000 caracteres), rating de 1 a 5 estrellas y hasta 3 tags de comportamiento.
 - **Votos** — arriba/abajo en cada review, un voto por identidad, con toggle para sacarlo.
-- **Top comentarios en la home** — las mejores reviews de toda la plataforma, ordenadas por score, cada una linkeando al perfil del jugador.
+- **Top comentarios en la home** — las mejores reviews de toda la plataforma, ordenadas por score, cada una linkeando al perfil del jugador, más un ranking de los jugadores con más reviews.
+- **Resumen por jugador** — rating promedio y los tags más repetidos arriba del perfil, con emblema de rank e íconos de campeón (Data Dragon / Community Dragon, sin API key).
 - **Moderación sin admin** — filtro de lenguaje al publicar, reportes de la comunidad y auto-ocultamiento a los 5 reports.
 - **Anti-abuso** — identidad anónima por cookie y rate limiting por IP hasheada.
+- **Tema único oscuro** (“Arcane neon”): tokens en `src/app/globals.css`, primitivas en `src/components/ui`, sin modo claro.
+- **Inglés por default, español con un clic** — el ícono de idioma del header guarda una cookie `locale`; las URLs no cambian. Los textos viven en `src/lib/i18n/dictionaries/{en,es}.ts` (`en.ts` es la fuente de verdad tipada).
+- **Errores de API por código** — los route handlers devuelven `{ error: CODE }` (`INVALID_INPUT`, `PROFANITY`, `RATE_LIMITED`, `NOT_FOUND`, `UPSTREAM_FAILED`, `SELF_REVIEW`, `NO_SHARED_MATCH`, ver `src/lib/apiErrors.ts`) y el cliente muestra el mensaje en el idioma activo.
+- **Reviews verificadas (opcional)** — si al publicar ingresás tu Riot ID y compartís una de las últimas 20 partidas del jugador, la review lleva el badge “Jugaron juntos” y aparece primera en el perfil. Tu Riot ID no se muestra: se guarda el puuid y la partida compartida.
+- **Cualquier región** — la plataforma de cada jugador se detecta sola vía Account-V1; no hay selector ni configuración.
+- **Datos desactualizados visibles** — si Riot no responde, el perfil sirve la cache y lo marca en el rank y en las partidas en vez de fallar.
 
 ### Tags disponibles
 
@@ -66,12 +73,11 @@ npm run dev                  # http://localhost:3000
 | `DATABASE_URL`         | Connection string **pooled** de Neon. La que usa la app en runtime.                                        |
 | `DIRECT_URL`           | Connection string **directa** de Neon. Necesaria para `prisma migrate`.                                    |
 | `RIOT_API_KEY`         | Development API Key de Riot. Expira cada 24 h.                                                             |
-| `RIOT_ACCOUNT_REGION`  | Routing continental para Account-V1 y Match-V5: `americas` · `europe` · `asia` · `sea`. Default: `europe`. |
-| `RIOT_PLATFORM_REGION` | Platform routing para League-V4: `euw1`, `na1`, `las`, etc. Default: `euw1`.                               |
+| `RIOT_ACCOUNT_REGION`  | Opcional. Host continental para las llamadas globales de Account-V1: `americas` · `europe` · `asia` · `sea`. Default: `americas`. |
 | `RATE_LIMIT_SALT`      | Salt del hash de IPs. String aleatorio largo (`openssl rand -hex 32`).                                     |
 | `NEXT_PUBLIC_SITE_URL` | URL pública del sitio (links absolutos y metadata).                                                        |
 
-La región no está hardcodeada en ningún lado: cambiando estas dos env vars la app apunta a otro servidor.
+La región de cada jugador se detecta sola: Account-V1 devuelve la plataforma activa de LoL (`la2`, `euw1`, `kr`…) y de ahí sale el routing de League-V4 y Match-V5. Cualquier Riot ID de cualquier región funciona sin configurar nada.
 
 ---
 

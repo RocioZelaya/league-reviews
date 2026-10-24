@@ -1,33 +1,71 @@
+import { ChampionIcon } from "@/components/ui/ChampionIcon";
+import { RelativeTime } from "@/components/ui/RelativeTime";
+import { formatDuration, formatKdaRatio, formatRole } from "@/lib/format";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 import type { MatchSummary } from "@/types";
-
-const SECONDS_PER_MINUTE = 60;
-
-function formatDuration(durationSeconds: number): string {
-  const minutes = Math.floor(durationSeconds / SECONDS_PER_MINUTE);
-  const seconds = durationSeconds % SECONDS_PER_MINUTE;
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-}
 
 type MatchItemProps = {
   match: MatchSummary;
+  dataDragonVersion: string;
+  dictionary: Dictionary;
 };
 
-export function MatchItem({ match }: MatchItemProps) {
+export function MatchItem({
+  match,
+  dataDragonVersion,
+  dictionary,
+}: MatchItemProps) {
+  const { match: matchCopy, roles } = dictionary;
+  const outcomeColor = match.win ? "bg-cyan" : "bg-magenta";
+  const outcomeText = match.win ? "text-cyan" : "text-magenta";
+
   return (
-    <li
-      className={`flex items-center justify-between rounded-lg border p-3 ${
-        match.win ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"
-      }`}
-    >
-      <div>
-        <p className="font-medium">{match.championName}</p>
-        <p className="text-sm text-neutral-500">
-          {match.kills}/{match.deaths}/{match.assists} · {match.role}
+    <li className="relative flex items-center gap-3 overflow-hidden rounded-xl border border-line bg-ink p-3 pl-4">
+      <span
+        aria-hidden="true"
+        className={`absolute inset-y-0 left-0 w-1 ${outcomeColor}`}
+      />
+      <ChampionIcon
+        championName={match.championName}
+        version={dataDragonVersion}
+      />
+      <div className="min-w-0 flex-1">
+        <p className="flex items-baseline gap-2">
+          <span className="truncate font-medium">{match.championName}</span>
+          <span
+            className={`shrink-0 font-display text-xs font-bold ${outcomeText}`}
+          >
+            <span aria-hidden="true">
+              {match.win ? matchCopy.winShort : matchCopy.lossShort}
+            </span>
+            <span className="sr-only">
+              {match.win ? matchCopy.win : matchCopy.loss}
+            </span>
+          </span>
+        </p>
+        <p className="truncate font-mono text-xs text-text-mute">
+          {formatRole(match.role, roles)} ·{" "}
+          {formatDuration(match.durationSeconds)} ·{" "}
+          <RelativeTime timestampMs={match.playedAt} variant="short" />
         </p>
       </div>
-      <div className="text-right text-sm text-neutral-500">
-        <p>{match.win ? "Victoria" : "Derrota"}</p>
-        <p>{formatDuration(match.durationSeconds)}</p>
+      <div className="shrink-0 text-right">
+        <p className="font-mono text-sm tabular-nums">
+          {match.kills}
+          <span className="text-text-mute">/</span>
+          <span className="text-magenta">{match.deaths}</span>
+          <span className="text-text-mute">/</span>
+          {match.assists}
+        </p>
+        <p className="font-mono text-xs text-text-mute">
+          {formatKdaRatio(
+            match.kills,
+            match.deaths,
+            match.assists,
+            matchCopy.perfectKda,
+          )}{" "}
+          KDA
+        </p>
       </div>
     </li>
   );
