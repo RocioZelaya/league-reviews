@@ -20,7 +20,7 @@ Fuera de alcance (documentado, no implementado en el MVP): login/RSO de Riot, le
 - Cuenta developer en https://developer.riotgames.com/ → **Development API Key** (expira cada 24h, se regenera manualmente en desarrollo; Production Key queda fuera del MVP).
 - Cuenta en **Neon** (Postgres serverless) — connection string pooled (`DATABASE_URL`) y directa (`DIRECT_URL`, requerida por Neon para `prisma migrate`).
 - Cuenta en **Vercel** para deploy.
-- Región Riot inicial: **EUW1 / europe** (configurable por env var, no hardcodeada). Account-V1 usa regiones continentales (americas/europe/asia/sea); Match-V5 y League-V4 usan platform routing (na1, euw1, etc).
+- Región: **detectada por jugador**. Account-V1 es global y `GET /riot/account/v1/region/by-game/lol/by-puuid/{puuid}` devuelve la plataforma activa (`la2`, `euw1`, `kr`…); League-V4 usa esa plataforma y Match-V5 su continente (`src/lib/riot/regions.ts`). `RIOT_ACCOUNT_REGION` solo elige el host continental para las llamadas globales (default `americas`).
 
 ## 4. Estructura de carpetas
 
@@ -203,7 +203,7 @@ Notas:
 
 ## 7. Integración y cache de Riot API
 
-- `resolveRiotAccount(gameName, tagLine)`: Account-V1 (`/riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}`) → `puuid`; League-V4 (`/lol/league/v4/entries/by-puuid/{puuid}`) → rank; Match-V5 (`/lol/match/v5/matches/by-puuid/{puuid}/ids?count=5` + `GET .../matches/{matchId}` x5) → últimas partidas.
+- Primera visita de un jugador (`getPlayerData`): Account-V1 (`/riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}`) → `puuid`; Account-V1 (`/riot/account/v1/region/by-game/lol/by-puuid/{puuid}`) → plataforma activa (404 = no juega LoL → 404 propio); League-V4 (`/lol/league/v4/entries/by-puuid/{puuid}`) → rank; Match-V5 (`/lol/match/v5/matches/by-puuid/{puuid}/ids?count=5` + `GET .../matches/{matchId}` x5) → últimas partidas. Todas las respuestas se validan con zod (`src/lib/riot/types.ts`).
 - Cache-first en `RiotAccount` con TTL diferenciado:
   - puuid: prácticamente inmutable, no vence.
   - rank/stats (`statsUpdatedAt`): **15 min**.
@@ -246,8 +246,7 @@ Todas las respuestas de error son `{ error: CODE }` con un código estable defin
 DATABASE_URL=
 DIRECT_URL=
 RIOT_API_KEY=
-RIOT_ACCOUNT_REGION=europe
-RIOT_PLATFORM_REGION=euw1
+RIOT_ACCOUNT_REGION=americas
 RATE_LIMIT_SALT=
 NEXT_PUBLIC_SITE_URL=
 ```

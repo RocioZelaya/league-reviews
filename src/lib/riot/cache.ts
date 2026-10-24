@@ -1,13 +1,15 @@
 import type { Prisma, RiotAccount } from "@prisma/client";
 import { db } from "@/lib/db";
-import { getPlatformRegion } from "./regions";
+import { getContinentalRegion, platformSchema, type Platform } from "./regions";
 import {
   fetchAccountByRiotId,
+  fetchActiveLolPlatform,
   fetchSoloQueueEntry,
   fetchRecentMatchIds,
   fetchMatch,
   isRiotAuthFailure,
   RiotApiError,
+  RiotNotFoundError,
 } from "./client";
 import type { ChampionStat, MatchSummary, StaleSections } from "./types";
 
@@ -67,10 +69,36 @@ function isStale(updatedAt: Date | null, ttlMs: number): boolean {
   return updatedAt.getTime() < Date.now() - ttlMs;
 }
 
+/**
+ * The platform stored on the row, re-resolved from Riot when the stored value
+ * is missing or invalid (rows created before auto-detection) or when a forced
+ * refresh asks for it (players transfer regions).
+ */
+async function resolvePlatform(
+  account: RiotAccount,
+  forceResolve: boolean,
+): Promise<Platform> {
+  const stored = platformSchema.safeParse(account.platformRegion);
+  if (stored.success && !forceResolve) return stored.data;
+
+  const platform = await fetchActiveLolPlatform(account.puuid);
+  if (!platform) {
+    throw new RiotNotFoundError(`lol account for puuid ${account.puuid}`);
+  }
+  if (platform !== account.platformRegion) {
+    await db.riotAccount.update({
+      where: { id: account.id },
+      data: { platformRegion: platform },
+    });
+  }
+  return platform;
+}
+
 async function refreshStats(
   account: RiotAccount,
+  platform: Platform,
 ): Promise<Prisma.RiotAccountUpdateInput> {
-  const entry = await fetchSoloQueueEntry(account.puuid);
+  const entry = await fetchSoloQueueEntry(account.puuid, platform);
   return {
     soloTier: entry?.tier ?? null,
     soloRank: entry?.rank ?? null,
@@ -83,15 +111,23 @@ async function refreshStats(
 
 async function refreshMatches(
   account: RiotAccount,
+  platform: Platform,
 ): Promise<Prisma.RiotAccountUpdateInput> {
-  const matchIds = await fetchRecentMatchIds(account.puuid, RECENT_MATCH_COUNT);
-  const matches = await Promise.all(matchIds.map((id) => fetchMatch(id)));
+  const region = getContinentalRegion(platform);
+  const matchIds = await fetchRecentMatchIds(
+    account.puuid,
+    region,
+    RECENT_MATCH_COUNT,
+  );
+  const matches = await Promise.all(
+    matchIds.map((id) => fetchMatch(id, region)),
+  );
   const summaries: MatchSummary[] = matches.map((match) => {
     const participant = match.info.participants.find(
       (p) => p.puuid === account.puuid,
     );
     if (!participant) {
-      throw new Error(
+      throw new RiotApiError(
         `Participant not found in match ${match.metadata.matchId}`,
       );
     }
@@ -115,6 +151,58 @@ async function refreshMatches(
   };
 }
 
+async function refreshExisting(
+  existing: RiotAccount,
+  forceRefresh: boolean,
+): Promise<PlayerData> {
+  const { gameName, tagLine } = existing;
+  const updates: Prisma.RiotAccountUpdateInput = {};
+  const stale: StaleSections = { stats: false, matches: false };
+  const needsStats =
+    forceRefresh || isStale(existing.statsUpdatedAt, STATS_TTL_MS);
+  const needsMatches =
+    forceRefresh || isStale(existing.matchesUpdatedAt, MATCHES_TTL_MS);
+
+  if (!needsStats && !needsMatches) {
+    console.info("riot.player.cache_hit", { gameName, tagLine });
+    return { account: existing, stale };
+  }
+
+  let platform: Platform;
+  try {
+    platform = await resolvePlatform(existing, forceRefresh);
+  } catch (error) {
+    // Without a platform nothing can be refreshed; serve the cache as stale.
+    logRefreshFailure("stats", gameName, tagLine, error);
+    return { account: existing, stale: { stats: true, matches: true } };
+  }
+
+  if (needsStats) {
+    try {
+      Object.assign(updates, await refreshStats(existing, platform));
+    } catch (error) {
+      stale.stats = true;
+      logRefreshFailure("stats", gameName, tagLine, error);
+    }
+  }
+  if (needsMatches) {
+    try {
+      Object.assign(updates, await refreshMatches(existing, platform));
+    } catch (error) {
+      stale.matches = true;
+      logRefreshFailure("matches", gameName, tagLine, error);
+    }
+  }
+  if (Object.keys(updates).length === 0) {
+    return { account: existing, stale };
+  }
+  const account = await db.riotAccount.update({
+    where: { id: existing.id },
+    data: updates,
+  });
+  return { account, stale };
+}
+
 export async function getPlayerData(
   gameName: string,
   tagLine: string,
@@ -123,50 +211,27 @@ export async function getPlayerData(
   const existing = await db.riotAccount.findFirst({
     where: { gameName, tagLine },
   });
-
   if (existing) {
-    const updates: Prisma.RiotAccountUpdateInput = {};
-    const stale: StaleSections = { stats: false, matches: false };
-    if (forceRefresh || isStale(existing.statsUpdatedAt, STATS_TTL_MS)) {
-      try {
-        Object.assign(updates, await refreshStats(existing));
-      } catch (error) {
-        stale.stats = true;
-        logRefreshFailure("stats", gameName, tagLine, error);
-      }
-    }
-    if (forceRefresh || isStale(existing.matchesUpdatedAt, MATCHES_TTL_MS)) {
-      try {
-        Object.assign(updates, await refreshMatches(existing));
-      } catch (error) {
-        stale.matches = true;
-        logRefreshFailure("matches", gameName, tagLine, error);
-      }
-    }
-    if (Object.keys(updates).length === 0) {
-      console.info("riot.player.cache_hit", { gameName, tagLine });
-      return { account: existing, stale };
-    }
-    const account = await db.riotAccount.update({
-      where: { id: existing.id },
-      data: updates,
-    });
-    return { account, stale };
+    return refreshExisting(existing, forceRefresh);
   }
 
   const account = await fetchAccountByRiotId(gameName, tagLine);
+  const platform = await fetchActiveLolPlatform(account.puuid);
+  if (!platform) {
+    throw new RiotNotFoundError(`lol account for ${gameName}#${tagLine}`);
+  }
   const created = await db.riotAccount.create({
     data: {
       puuid: account.puuid,
       gameName: account.gameName,
       tagLine: account.tagLine,
-      platformRegion: getPlatformRegion(),
+      platformRegion: platform,
     },
   });
 
   const [statsUpdates, matchUpdates] = await Promise.all([
-    refreshStats(created),
-    refreshMatches(created),
+    refreshStats(created, platform),
+    refreshMatches(created, platform),
   ]);
 
   const updated = await db.riotAccount.update({

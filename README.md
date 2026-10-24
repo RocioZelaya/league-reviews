@@ -71,12 +71,11 @@ npm run dev                  # http://localhost:3000
 | `DATABASE_URL`         | Connection string **pooled** de Neon. La que usa la app en runtime.                                        |
 | `DIRECT_URL`           | Connection string **directa** de Neon. Necesaria para `prisma migrate`.                                    |
 | `RIOT_API_KEY`         | Development API Key de Riot. Expira cada 24 h.                                                             |
-| `RIOT_ACCOUNT_REGION`  | Routing continental para Account-V1 y Match-V5: `americas` · `europe` · `asia` · `sea`. Default: `europe`. |
-| `RIOT_PLATFORM_REGION` | Platform routing para League-V4: `euw1`, `na1`, `las`, etc. Default: `euw1`.                               |
+| `RIOT_ACCOUNT_REGION`  | Opcional. Host continental para las llamadas globales de Account-V1: `americas` · `europe` · `asia` · `sea`. Default: `americas`. |
 | `RATE_LIMIT_SALT`      | Salt del hash de IPs. String aleatorio largo (`openssl rand -hex 32`).                                     |
 | `NEXT_PUBLIC_SITE_URL` | URL pública del sitio (links absolutos y metadata).                                                        |
 
-La región no está hardcodeada en ningún lado: cambiando estas dos env vars la app apunta a otro servidor.
+La región de cada jugador se detecta sola: Account-V1 devuelve la plataforma activa de LoL (`la2`, `euw1`, `kr`…) y de ahí sale el routing de League-V4 y Match-V5. Cualquier Riot ID de cualquier región funciona sin configurar nada.
 
 ---
 
